@@ -708,6 +708,7 @@
     function SummaryPage({data,onDone}){
       const {finalTasks,actual,plan}=data;
       const [feedback, setFeedback] = useState("");
+      const [feedbackSent, setFeedbackSent] = useState(false);
       const sc=calcScore(finalTasks,actual);
       const done=finalTasks.filter(t=>t.done).length;
       const scColor=sc>=80?P:sc>=60?AM:PK;
@@ -772,26 +773,36 @@
 
           <div style={{...CARD,marginBottom:14}}>
             <h3 style={{fontSize:14,fontWeight:800,marginBottom:12,letterSpacing:"-0.01em"}}>Please Write your Feedback and Write any problem you faced</h3>
-            <textarea 
-              value={feedback} 
-              onChange={e=>setFeedback(e.target.value)} 
-              placeholder="Your feedback..."
-              style={{...INP, minHeight: 80, resize: "vertical", marginBottom: 12}}
-              onFocus={e=>{e.target.style.borderColor=PM;e.target.style.boxShadow=`0 0 0 4px ${PL}`;e.target.style.background="#fff";}}
-              onBlur={e=>{e.target.style.borderColor="var(--color-border-secondary)";e.target.style.boxShadow="none";e.target.style.background="rgba(255,255,255,0.85)";}}
-            />
-            <button 
-              onClick={() => {
-                const mailtoLink = `mailto:adhamohanedahmed@gmail.com?subject=FocusSpace Feedback&body=${encodeURIComponent(feedback)}`;
-                window.location.href = mailtoLink;
-              }}
-              style={{...BTNS, width: "100%", fontWeight: 700, opacity: feedback.trim() ? 1 : 0.5}}
-              disabled={!feedback.trim()}
-              onMouseEnter={e=>{if(feedback.trim()){e.currentTarget.style.borderColor=PM;e.currentTarget.style.boxShadow=`0 4px 16px rgba(111,66,255,0.12)`;}}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--color-border-tertiary)";e.currentTarget.style.boxShadow="none";}}
-            >
-              <i className="ti ti-mail" style={{verticalAlign:"-2px",marginRight:5}} aria-hidden="true"/> Send Feedback
-            </button>
+            {feedbackSent ? (
+              <div style={{textAlign: "center", padding: "16px 10px", background: TLL, borderRadius: 14, color: TLD, border: `1px solid rgba(0,200,150,0.2)`}}>
+                <i className="ti ti-circle-check" style={{fontSize: 28, marginBottom: 6, display: "block", color: TL}} aria-hidden="true"/>
+                <span style={{fontWeight: 700, fontSize: 14}}>Feedback sent successfully! Thank you.</span>
+              </div>
+            ) : (
+              <>
+                <textarea 
+                  value={feedback} 
+                  onChange={e=>setFeedback(e.target.value)} 
+                  placeholder="Your feedback..."
+                  style={{...INP, minHeight: 80, resize: "vertical", marginBottom: 12}}
+                  onFocus={e=>{e.target.style.borderColor=PM;e.target.style.boxShadow=`0 0 0 4px ${PL}`;e.target.style.background="#fff";}}
+                  onBlur={e=>{e.target.style.borderColor="var(--color-border-secondary)";e.target.style.boxShadow="none";e.target.style.background="rgba(255,255,255,0.85)";}}
+                />
+                <button 
+                  onClick={() => {
+                    const mailtoLink = `mailto:adhamohanedahmed@gmail.com?subject=FocusSpace Feedback&body=${encodeURIComponent(feedback)}`;
+                    window.location.href = mailtoLink;
+                    setFeedbackSent(true);
+                  }}
+                  style={{...BTNS, width: "100%", fontWeight: 700, opacity: feedback.trim() ? 1 : 0.5}}
+                  disabled={!feedback.trim()}
+                  onMouseEnter={e=>{if(feedback.trim()){e.currentTarget.style.borderColor=PM;e.currentTarget.style.boxShadow=`0 4px 16px rgba(111,66,255,0.12)`;}}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--color-border-tertiary)";e.currentTarget.style.boxShadow="none";}}
+                >
+                  <i className="ti ti-mail" style={{verticalAlign:"-2px",marginRight:5}} aria-hidden="true"/> Send Feedback
+                </button>
+              </>
+            )}
           </div>
 
           <button onClick={onDone} style={BTNP}>
