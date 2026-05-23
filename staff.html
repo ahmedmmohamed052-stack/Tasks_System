@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FocusSpace - Staff Panel</title>
+
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.1.0/dist/tabler-icons.min.css"/>
+
+  <!-- React + ReactDOM + Babel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-background-primary:   #ffffff;
+      --color-background-secondary: #f7f6ff;
+      --color-background-tertiary:  #f2f1fc;
+      --color-text-primary:         #17132b;
+      --color-text-secondary:       #6b6785;
+      --color-text-tertiary:        #a09bbc;
+      --color-border-tertiary:      #e8e5f8;
+      --color-border-secondary:     #d4d0ef;
+      --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-background-tertiary);
+      color: var(--color-text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // --- Firebase Init ---
+    const firebaseConfig = {
+      apiKey:            "AIzaSyBzaY33Wi7V_T22EuBk-045WwEtFqTsV4Y",
+      authDomain:        "tasks-system-ace8a.firebaseapp.com",
+      projectId:         "tasks-system-ace8a",
+      storageBucket:     "tasks-system-ace8a.firebasestorage.app",
+      messagingSenderId: "357805533325",
+      appId:             "1:357805533325:web:506703398fe76daacc9ac4",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const STAFF_PIN = "1234";
+
+    // --- Design Tokens & Shared Styles ---
+    const P="#534AB7", PL="#EEEDFE", PD="#3C3489", PM="#7F77DD";
+    const PK="#D4537E", PKL="#FBEAF0", PKD="#72243E";
+    const TL="#1D9E75", TLL="#E1F5EE", TLD="#085041";
+    const CARD = {background:"var(--color-background-primary)",borderRadius:14,border:"0.5px solid var(--color-border-tertiary)",padding:"20px 22px"};
+    const INP = {width:"100%",padding:"11px 14px",border:"0.5px solid var(--color-border-secondary)",borderRadius:9,fontFamily:"var(--font-sans)",fontSize:15,color:"var(--color-text-primary)",background:"var(--color-background-primary)",outline:"none"};
+    const BTNP = {background:P,color:"#fff",border:"none",borderRadius:9,padding:"12px 20px",fontFamily:"var(--font-sans)",fontWeight:500,fontSize:14,cursor:"pointer",width:"100%"};
+    const PAGE = {background:"var(--color-background-tertiary)",minHeight:"100vh",paddingBottom:60};
+    const INNER = {maxWidth:460,margin:"0 auto",padding:"28px 20px"};
+
+    function Pill({label,color="purple"}){
+      const m={purple:[PL,PD],teal:[TLL,TLD]};
+      return <span style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 11px",borderRadius:100,fontSize:11,fontWeight:500,background:m[color][0],color:m[color][1]}}>{label}</span>;
+    }
+    function ErrBox({msg}){ return msg?<div style={{marginTop:10,padding:"10px 13px",background:PKL,borderRadius:8,color:PKD,fontSize:13,borderLeft:`3px solid ${PK}`}}>{msg}</div>:null; }
+    function OkBox({msg}){ return msg?<div style={{marginTop:10,padding:"10px 13px",background:TLL,borderRadius:8,color:TLD,fontSize:13,borderLeft:`3px solid ${TL}`}}>{msg}</div>:null; }
+    function FocusInput(props){ return <input style={{...INP,...props.style}} {...props}/>; }
+
+    function App() {
+      const [authed, setAuthed] = useState(false);
+      const [pin, setPin] = useState("");
+      const [shake, setShake] = useState(false);
+      const [users, setUsers] = useState([]);
+      const [newPhone, setNewPhone] = useState("+20");
+      const [adding, setAdding] = useState(false);
+      const [removing, setRemoving] = useState("");
+      const [ok, setOk] = useState(""); 
+      const [err, setErr] = useState("");
+      const [loading, setLoading] = useState(false);
+
+      async function load() {
+        setLoading(true);
+        try {
+          const snap = await db.collection("allowedUsers").where("active", "==", true).get();
+          const list = [];
+          snap.forEach(doc => list.push(doc.id));
+          setUsers(list);
+        } catch (e) {
+          console.error(e);
+        }
+        setLoading(false);
+      }
+
+      function tryPin() {
+        if(pin === STAFF_PIN) { setAuthed(true); load(); }
+        else { setShake(true); setPin(""); setTimeout(()=>setShake(false), 500); }
+      }
+
+      useEffect(() => { if(pin.length === 4) tryPin(); }, [pin]);
+
+      async function add() {
+        if(newPhone.length < 10) return;
+        setAdding(true); setErr(""); setOk("");
+        try {
+          await db.collection("allowedUsers").doc(newPhone).set({ active: true, addedAt: firebase.firestore.FieldValue.serverTimestamp() });
+          setOk(`${newPhone} — checked in successfully`);
+          setNewPhone("+20");
+          await load();
+        } catch (e) {
+          console.error(e);
+          setErr("Failed to add user: " + e.message);
+        }
+        setAdding(false);
+        setTimeout(()=>setOk(""), 3000);
+      }
+
+      async function remove(p) {
+        setRemoving(p);
+        try {
+          await db.collection("allowedUsers").doc(p).delete();
+          await load();
+        } catch(e) {}
+        setRemoving("");
+      }
+
+      if(!authed) {
+        const keys=["1","2","3","4","5","6","7","8","9","","0","⌫"];
+        return (
+          <div style={PAGE}>
+            <div style={{...INNER,paddingTop:52,maxWidth:360}}>
+              <div style={{textAlign:"center",marginBottom:28}}>
+                <div style={{width:52,height:52,background:PL,borderRadius:13,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
+                  <i className="ti ti-lock" style={{fontSize:26,color:P}}/>
+                </div>
+                <h2 style={{fontSize:20,fontWeight:500,marginBottom:4}}>Staff access</h2>
+                <p style={{color:"var(--color-text-secondary)",fontSize:14}}>Enter your 4-digit PIN</p>
+              </div>
+              <div style={{display:"flex",gap:14,justifyContent:"center",marginBottom:28,transition:"transform 0.1s",transform:shake?"translateX(8px)":"none"}}>
+                {[0,1,2,3].map(i=>(
+                  <div key={i} style={{width:16,height:16,borderRadius:"50%",background:i<pin.length?P:PL,border:`1.5px solid ${shake?PK:i<pin.length?P:"var(--color-border-secondary)"}`,transition:"all 0.15s"}}/>
+                ))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+                {keys.map((k,i)=>(
+                  <button key={i} onClick={()=>{
+                    if(!k)return;
+                    if(k==="⌫")setPin(p=>p.slice(0,-1));
+                    else if(pin.length<4)setPin(p=>p+k);
+                  }} style={{padding:"16px 0",borderRadius:10,border:"0.5px solid var(--color-border-tertiary)",background:k?"var(--color-background-primary)":"transparent",fontFamily:"var(--font-sans)",fontSize:k==="⌫"?18:20,fontWeight:500,cursor:k?"pointer":"default",color:"var(--color-text-primary)"}}>
+                    {k}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div style={PAGE}>
+          <div style={INNER}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:24}}>
+              <div>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                  <h1 style={{fontSize:22,fontWeight:500}}>Staff Panel</h1>
+                  <Pill label="Active" color="teal"/>
+                </div>
+                <p style={{color:"var(--color-text-secondary)",fontSize:14}}>Manage workspace access</p>
+              </div>
+            </div>
+
+            <div style={{...CARD,marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <i className="ti ti-user-plus" style={{fontSize:18,color:P}}/>
+                <h3 style={{fontSize:16,fontWeight:500}}>Check in customer</h3>
+              </div>
+              <p style={{color:"var(--color-text-secondary)",fontSize:13,marginBottom:14}}>Enter their phone number</p>
+              <div style={{display:"flex",gap:10}}>
+                <FocusInput value={newPhone} onChange={e=>setNewPhone(e.target.value)} placeholder="+20 1XX XXX XXXX" type="tel" style={{flex:1}}/>
+                <button onClick={add} disabled={adding||newPhone.length<10} style={{...BTNP,width:"auto",padding:"11px 18px",opacity:adding||newPhone.length<10?0.5:1}}>
+                  {adding?<i className="ti ti-loader-2" style={{animation:"spin 0.8s linear infinite"}}/>:"Add"}
+                </button>
+              </div>
+              <OkBox msg={ok}/>
+              <ErrBox msg={err}/>
+            </div>
+
+            <div style={CARD}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <i className="ti ti-users" style={{fontSize:18,color:P}}/>
+                  <h3 style={{fontSize:16,fontWeight:500}}>Currently inside</h3>
+                </div>
+                <Pill label={`${users.length} active`} color="purple"/>
+              </div>
+              {loading?(
+                <div style={{textAlign:"center",padding:"20px 0"}}><i className="ti ti-loader-2" style={{animation:"spin 0.8s linear infinite",fontSize:22,color:"var(--color-text-secondary)"}}/></div>
+              ):users.length===0?(
+                <div style={{textAlign:"center",padding:"24px 0"}}>
+                  <i className="ti ti-armchair" style={{fontSize:32,color:"var(--color-text-tertiary)",display:"block",marginBottom:8}}/>
+                  <p style={{color:"var(--color-text-secondary)",fontSize:14}}>No one checked in right now</p>
+                </div>
+              ):(
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {users.map(p=>(
+                    <div key={p} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 14px",background:"var(--color-background-secondary)",borderRadius:10,border:"0.5px solid var(--color-border-tertiary)"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <div style={{width:34,height:34,borderRadius:"50%",background:PL,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          <i className="ti ti-user" style={{fontSize:16,color:P}}/>
+                        </div>
+                        <div>
+                          <div style={{fontSize:14,fontWeight:500}}>{p}</div>
+                          <div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>Checked in</div>
+                        </div>
+                      </div>
+                      <button onClick={()=>remove(p)} disabled={removing===p} style={{background:PKL,color:PKD,border:"none",borderRadius:7,padding:"7px 12px",fontFamily:"var(--font-sans)",fontWeight:500,fontSize:12,cursor:"pointer",opacity:removing===p?0.5:1}}>
+                        {removing===p?<i className="ti ti-loader-2" style={{animation:"spin 0.8s linear infinite"}}/>:"Check out"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
+</body>
+</html>

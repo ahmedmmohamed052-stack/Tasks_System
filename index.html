@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FocusSpace</title>
+
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.1.0/dist/tabler-icons.min.css"/>
+
+  <!-- React + ReactDOM + Babel (for JSX in browser) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-background-primary:   #ffffff;
+      --color-background-secondary: #f7f6ff;
+      --color-background-tertiary:  #f2f1fc;
+      --color-text-primary:         #17132b;
+      --color-text-secondary:       #6b6785;
+      --color-text-tertiary:        #a09bbc;
+      --color-border-tertiary:      #e8e5f8;
+      --color-border-secondary:     #d4d0ef;
+      --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --border-radius-md: 8px;
+      --border-radius-lg: 12px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-background-tertiary);
+      color: var(--color-text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); border: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+
+    /* ═══════════════════════ DATA ═══════════════════════ */
+    const WF = {
+      "Technology":["Programming","Web Development","Mobile Development","AI / Machine Learning","Cybersecurity","Data Science","DevOps","Databases","Embedded Systems"],
+      "Design":["Graphic Design","UI/UX","Motion Graphics","3D Design","Video Editing","Photography"],
+      "Business & Management":["Marketing","Sales","Accounting","Human Resources","Project Management","Entrepreneurship","Financial Analysis"],
+      "Medicine & Health":["Medicine","Pharmacy","Nursing","Dentistry","Physical Therapy","Nutrition"],
+      "Engineering":["Civil Engineering","Electrical Engineering","Mechanical Engineering","Chemical Engineering","Architecture","Electronics"],
+      "Law":["Legal Research","Contracts","Commercial Law","International Law"],
+      "Languages & Translation":["Translation","Language Teaching","Linguistics"],
+      "Media & Writing":["Journalism","Content Writing","Copywriting","Authoring","Script Writing"],
+      "Education":["Studying","Academic Research","Exam Preparation","Curriculum Design"],
+      "Science":["Mathematics","Physics","Chemistry","Biology","Statistics"],
+      "Arts":["Music","Drawing","Fine Arts","Creative Writing"],
+      "Other":["Other"],
+    };
+    const SF = {
+      "Technology & CS":["Programming Fundamentals","Data Structures","Web Development","AI & ML","Cybersecurity","Data Science"],
+      "Mathematics":["Algebra","Calculus","Discrete Math","Linear Algebra","Statistics"],
+      "Natural Sciences":["Physics","Chemistry","Biology","Geology","Biochemistry"],
+      "Medicine & Health":["Anatomy","Physiology","Pharmacology","Pathology","Microbiology"],
+      "Engineering":["Civil","Electrical","Mechanical","Chemical","Electronics","Thermodynamics"],
+      "Business & Economics":["Microeconomics","Macroeconomics","Accounting","Finance","Marketing"],
+      "Law":["Constitutional Law","Criminal Law","Civil Law","Commercial Law"],
+      "Languages":["Arabic","English","French","German","Spanish","Chinese"],
+      "Social Sciences":["Sociology","Psychology","Political Science","Philosophy"],
+      "History & Humanities":["Ancient History","Modern History","Islamic History","Cultural Studies"],
+      "High School — Science":["Pure Mathematics","Physics","Chemistry","Biology","Arabic","English"],
+      "High School — Arts":["History","Geography","Philosophy","Psychology","Arabic","English"],
+      "Middle School":["Arabic","English","Mathematics","Physics","Chemistry","Biology","History"],
+      "Primary School":["Arabic","English","Mathematics","Science","Social Studies"],
+      "Other":["Other"],
+    };
+    const ICONS = {
+      "Technology":"ti-device-laptop","Technology & CS":"ti-device-laptop",
+      "Design":"ti-palette","Business & Management":"ti-chart-bar","Business & Economics":"ti-chart-bar",
+      "Medicine & Health":"ti-stethoscope","Engineering":"ti-settings-2","Law":"ti-scale",
+      "Languages & Translation":"ti-world","Languages":"ti-world","Media & Writing":"ti-pencil",
+      "Education":"ti-book-2","Science":"ti-flask","Mathematics":"ti-math",
+      "Natural Sciences":"ti-leaf","Arts":"ti-music","Social Sciences":"ti-brain",
+      "History & Humanities":"ti-building-arch","High School — Science":"ti-school",
+      "High School — Arts":"ti-school","Middle School":"ti-school","Primary School":"ti-school",
+      "Other":"ti-dots-circle-horizontal",
+    };
+    const GA = new Set(["Technology","Business & Management","Medicine & Health","Engineering","Technology & CS","Business & Economics"]);
+    const GB = new Set(["Design","Law","Languages & Translation","Media & Writing","Arts","Languages"]);
+    const TM = { A:{easy:40,medium:60,hard:90}, B:{easy:30,medium:45,hard:75}, C:{easy:35,medium:50,hard:85} };
+    const grp = f => GA.has(f)?"A":GB.has(f)?"B":"C";
+    const dur = (f,d) => TM[grp(f)][d]??30;
+
+    function buildPlan(tasks) {
+      const ord={hard:0,medium:1,easy:2};
+      const sorted=[...tasks].sort((a,b)=>ord[a.diff]-ord[b.diff]);
+      const blocks=[]; let c=0;
+      sorted.forEach((t,i)=>{
+        blocks.push({type:"work",task:t,dur:t.dur,start:c}); c+=t.dur;
+        if(i<sorted.length-1){blocks.push({type:"break",task:null,dur:10,start:c}); c+=10;}
+      });
+      return { blocks, tasks:sorted, total:c, work:sorted.reduce((s,t)=>s+t.dur,0) };
+    }
+    function calcScore(tasks, actual) {
+      const done=tasks.filter(t=>t.done).length, n=tasks.length;
+      const plan=tasks.reduce((s,t)=>s+t.dur,0);
+      const cs=n>0?done/n:0, ta=plan>0?Math.max(0,1-Math.abs(actual-plan)/plan):0;
+      return Math.round((cs*0.6+ta*0.4)*100);
+    }
+
+    /* ═══════════════════════ FIREBASE INIT ═══════════════════════ */
+    const firebaseConfig = {
+      apiKey:            "AIzaSyBzaY33Wi7V_T22EuBk-045WwEtFqTsV4Y",
+      authDomain:        "tasks-system-ace8a.firebaseapp.com",
+      projectId:         "tasks-system-ace8a",
+      storageBucket:     "tasks-system-ace8a.firebasestorage.app",
+      messagingSenderId: "357805533325",
+      appId:             "1:357805533325:web:506703398fe76daacc9ac4",
+    };
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+    /* ═══════════════════════ DESIGN TOKENS ═══════════════════════ */
+    const P="#534AB7", PL="#EEEDFE", PD="#3C3489", PM="#7F77DD";
+    const PK="#D4537E", PKL="#FBEAF0", PKD="#72243E";
+    const TL="#1D9E75", TLL="#E1F5EE", TLD="#085041";
+    const AM="#BA7517", AML="#FAEEDA", AMD="#633806";
+    const DIFF={ easy:{bg:TLL,tx:TLD,lbl:"Easy"}, medium:{bg:AML,tx:AMD,lbl:"Medium"}, hard:{bg:PKL,tx:PKD,lbl:"Hard"} };
+
+    /* ═══════════════════════ SHARED STYLES ═══════════════════════ */
+    const CARD={background:"var(--color-background-primary)",borderRadius:14,border:"0.5px solid var(--color-border-tertiary)",padding:"20px 22px"};
+    const INP={width:"100%",padding:"11px 14px",border:"0.5px solid var(--color-border-secondary)",borderRadius:9,fontFamily:"var(--font-sans)",fontSize:15,color:"var(--color-text-primary)",background:"var(--color-background-primary)",outline:"none",transition:"border-color 0.15s, box-shadow 0.15s"};
+    const BTNP={background:P,color:"#fff",border:"none",borderRadius:9,padding:"12px 20px",fontFamily:"var(--font-sans)",fontWeight:500,fontSize:14,cursor:"pointer",width:"100%"};
+    const BTNS={background:PL,color:PD,border:"none",borderRadius:9,padding:"11px 20px",fontFamily:"var(--font-sans)",fontWeight:500,fontSize:14,cursor:"pointer"};
+    const PAGE={background:"var(--color-background-tertiary)",minHeight:"100vh",paddingBottom:60};
+    const INNER={maxWidth:460,margin:"0 auto",padding:"28px 20px"};
+    const LBL={fontSize:11,fontWeight:500,letterSpacing:"0.08em",textTransform:"uppercase",color:"var(--color-text-secondary)",display:"block",marginBottom:7};
+
+    /* ═══════════════════════ SHARED COMPONENTS ═══════════════════════ */
+    function Pill({label,color="purple"}){
+      const m={purple:[PL,PD],pink:[PKL,PKD],teal:[TLL,TLD],amber:[AML,AMD]};
+      return <span style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 11px",borderRadius:100,fontSize:11,fontWeight:500,background:m[color][0],color:m[color][1]}}>{label}</span>;
+    }
+    function Back({onClick}){
+      return <button onClick={onClick} style={{background:"none",border:"none",color:PM,cursor:"pointer",fontFamily:"var(--font-sans)",fontSize:14,padding:"0 0 18px",display:"flex",alignItems:"center",gap:5}}>
+        <i className="ti ti-arrow-left" aria-hidden="true"/> Back
+      </button>;
+    }
+    function ErrBox({msg}){
+      return msg?<div style={{marginTop:10,padding:"10px 13px",background:PKL,borderRadius:8,color:PKD,fontSize:13,borderLeft:`3px solid ${PK}`}}>{msg}</div>:null;
+    }
+    function OkBox({msg}){
+      return msg?<div style={{marginTop:10,padding:"10px 13px",background:TLL,borderRadius:8,color:TLD,fontSize:13,borderLeft:`3px solid ${TL}`}}>{msg}</div>:null;
+    }
+    function FocusInput({style,...props}){
+      return <input style={{...INP,...style}}
+        onFocus={e=>{e.target.style.borderColor=PM;e.target.style.boxShadow=`0 0 0 3px ${PL}`;}}
+        onBlur={e=>{e.target.style.borderColor="var(--color-border-secondary)";e.target.style.boxShadow="none";}}
+        {...props}/>;
+    }
+
+    /* ═══════════════════════ AUTH PAGE (EMAIL/PASS/GOOGLE) ═══════════════════════ */
+    function AuthPage({ onAuthSuccess }) {
+      const [mode, setMode] = useState("login"); // "login" or "register"
+      const [email, setEmail] = useState("");
+      const [password, setPassword] = useState("");
+      const [loading, setLoading] = useState(false);
+      const [err, setErr] = useState("");
+      const [msg, setMsg] = useState("");
+
+      useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          if (user && user.emailVerified) {
+            onAuthSuccess(user);
+          }
+        });
+        return unsubscribe;
+      }, []);
+
+      async function handleEmailAuth() {
+        setLoading(true); setErr(""); setMsg("");
+        try {
+          if (mode === "register") {
+            const cred = await auth.createUserWithEmailAndPassword(email, password);
+            await cred.user.sendEmailVerification();
+            setMsg("Verification email sent! Please check your inbox and verify before logging in.");
+            auth.signOut();
+            setMode("login");
+          } else {
+            const cred = await auth.signInWithEmailAndPassword(email, password);
+            if (!cred.user.emailVerified) {
+              setErr("Please verify your email first.");
+              auth.signOut();
+            } else {
+              onAuthSuccess(cred.user);
+            }
+          }
+        } catch (error) {
+          setErr(error.message);
+        }
+        setLoading(false);
+      }
+
+      async function handleGoogleAuth() {
+        setLoading(true); setErr("");
+        try {
+          const cred = await auth.signInWithPopup(googleProvider);
+          onAuthSuccess(cred.user);
+        } catch (error) {
+          setErr(error.message);
+        }
+        setLoading(false);
+      }
+
+      return (
+        <div style={PAGE}>
+          <div style={{...INNER,paddingTop:64,maxWidth:420}}>
+            <div style={{marginBottom:36, textAlign:"center"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:8}}>
+                <div style={{width:42,height:42,background:PL,borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <i className="ti ti-bolt" style={{fontSize:22,color:P}} aria-hidden="true"/>
+                </div>
+                <span style={{fontSize:23,fontWeight:500}}>FocusSpace</span>
+              </div>
+              <p style={{color:"var(--color-text-secondary)",fontSize:14}}>Your session planner</p>
+            </div>
+
+            <div style={CARD}>
+              <h2 style={{fontSize:20,fontWeight:500,marginBottom:4}}>{mode === "login" ? "Welcome back" : "Create account"}</h2>
+              <p style={{color:"var(--color-text-secondary)",fontSize:14,marginBottom:20}}>Continue with Email or Google</p>
+              
+              <button style={{...BTNS, width:"100%", marginBottom:20, display:"flex", alignItems:"center", justifyContent:"center", gap:8}} onClick={handleGoogleAuth} disabled={loading}>
+                <i className="ti ti-brand-google-filled" style={{fontSize:18, color:"#DB4437"}} aria-hidden="true"/>
+                Continue with Google
+              </button>
+
+              <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:20}}>
+                <div style={{flex:1, height:1, background:"var(--color-border-tertiary)"}}></div>
+                <span style={{fontSize:12, color:"var(--color-text-tertiary)"}}>OR</span>
+                <div style={{flex:1, height:1, background:"var(--color-border-tertiary)"}}></div>
+              </div>
+
+              <label style={LBL}>Email</label>
+              <FocusInput value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com" type="email" style={{marginBottom:14}}/>
+              
+              <label style={LBL}>Password</label>
+              <FocusInput value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" type="password"/>
+              
+              <ErrBox msg={err}/>
+              <OkBox msg={msg}/>
+              
+              <button style={{...BTNP,marginTop:20,opacity:loading||!email||!password?0.5:1}} onClick={handleEmailAuth} disabled={loading||!email||!password}>
+                {loading?<i className="ti ti-loader-2" style={{animation:"spin 0.8s linear infinite"}} aria-hidden="true"/>:mode==="login"?"Sign In":"Sign Up"}
+              </button>
+
+              <p style={{fontSize:13, color:"var(--color-text-secondary)", textAlign:"center", marginTop:16}}>
+                {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+                <button onClick={()=>{setMode(mode==="login"?"register":"login"); setErr(""); setMsg("");}} style={{background:"none",border:"none",color:P,fontWeight:500,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+                  {mode === "login" ? "Sign Up" : "Sign In"}
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════ PHONE VERIFICATION PAGE ═══════════════════════ */
+    function PhonePage({ user, onVerified }) {
+      const [phone, setPhone] = useState("+20");
+      const [loading, setLoading] = useState(false);
+      const [err, setErr] = useState("");
+
+      async function checkPhone() {
+        if(phone.length < 10) return;
+        setLoading(true); setErr("");
+        try {
+          const doc = await db.collection("allowedUsers").doc(phone).get();
+          if (doc.exists && doc.data().active) {
+            onVerified(phone);
+          } else {
+            setErr("This number is not registered for workspace access. Please ask staff.");
+          }
+        } catch (error) {
+          setErr("Error checking number. Please try again.");
+        }
+        setLoading(false);
+      }
+
+      return (
+        <div style={PAGE}>
+          <div style={{...INNER,paddingTop:64,maxWidth:420}}>
+            <div style={{marginBottom:36}}>
+              <p style={{fontSize:12,color:"var(--color-text-tertiary)",marginBottom:4}}>Logged in as {user.email}</p>
+              <button onClick={() => auth.signOut()} style={{background:"none",border:"none",color:PM,cursor:"pointer",fontFamily:"var(--font-sans)",fontSize:12}}>Log out</button>
+            </div>
+
+            <div style={CARD}>
+              <h2 style={{fontSize:20,fontWeight:500,marginBottom:4}}>Workspace Access</h2>
+              <p style={{color:"var(--color-text-secondary)",fontSize:14,marginBottom:20}}>Enter your registered phone number</p>
+              
+              <label style={LBL}>Phone number</label>
+              <FocusInput value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+20 1XX XXX XXXX" type="tel"/>
+              
+              <ErrBox msg={err}/>
+              
+              <button style={{...BTNP,marginTop:20,opacity:loading||phone.length<10?0.5:1}} onClick={checkPhone} disabled={loading||phone.length<10}>
+                {loading?<i className="ti ti-loader-2" style={{animation:"spin 0.8s linear infinite"}} aria-hidden="true"/>:"Check Access"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════ SETUP PAGE ═══════════════════════ */
+    function SetupPage({phone,onStart}){
+      const [step,setStep]=useState("mode");
+      const [mode,setMode]=useState(null);
+      const [field,setField]=useState(null);
+      const [sub,setSub]=useState(null);
+      const [tasks,setTasks]=useState([]);
+      const [name,setName]=useState("");
+      const [diff,setDiff]=useState("medium");
+      const fields=mode==="work"?WF:SF;
+      const lbl=mode==="work"?"Task":"Topic";
+
+      function addTask(){
+        if(!name.trim())return;
+        setTasks(p=>[...p,{id:Date.now()+Math.random(),name:name.trim(),diff,dur:dur(field,diff),done:false}]);
+        setName("");
+      }
+
+      if(step==="mode") return(
+        <div style={PAGE}><div style={INNER}>
+          <div style={{marginBottom:28}}>
+            <p style={{fontSize:12,color:"var(--color-text-tertiary)",marginBottom:4}}>Logged in as {phone}</p>
+            <h1 style={{fontSize:24,fontWeight:500}}>What are you doing today?</h1>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {[{k:"work",icon:"ti-briefcase",title:"Work",desc:"Projects, tasks, freelance work"},
+              {k:"study",icon:"ti-book-2",title:"Study",desc:"Subjects, topics, exam prep"}].map(o=>(
+              <button key={o.k} onClick={()=>{setMode(o.k);setStep("field");}} style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:14,padding:"20px 22px",cursor:"pointer",display:"flex",alignItems:"center",gap:16,textAlign:"left",width:"100%",transition:"border-color 0.15s, box-shadow 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=PM;e.currentTarget.style.boxShadow=`0 0 0 3px ${PL}`;}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--color-border-tertiary)";e.currentTarget.style.boxShadow="none";}}>
+                <div style={{width:46,height:46,background:PL,borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <i className={`ti ${o.icon}`} style={{fontSize:22,color:P}} aria-hidden="true"/>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:16,fontWeight:500,marginBottom:2}}>{o.title}</div>
+                  <div style={{fontSize:13,color:"var(--color-text-secondary)"}}>{o.desc}</div>
+                </div>
+                <i className="ti ti-chevron-right" style={{fontSize:18,color:"var(--color-text-tertiary)"}} aria-hidden="true"/>
+              </button>
+            ))}
+          </div>
+        </div></div>
+      );
+
+      if(step==="field") return(
+        <div style={PAGE}><div style={INNER}>
+          <Back onClick={()=>setStep("mode")}/>
+          <div style={{marginBottom:22}}>
+            <Pill label={mode==="work"?"Work":"Study"} color={mode==="work"?"purple":"teal"}/>
+            <h2 style={{fontSize:22,fontWeight:500,marginTop:10}}>Select your field</h2>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {Object.keys(fields).map(f=>(
+              <button key={f} onClick={()=>{setField(f);setStep("subfield");}} style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:12,padding:"16px 14px",cursor:"pointer",textAlign:"center",transition:"border-color 0.15s, background 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=PM;e.currentTarget.style.background=PL;}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--color-border-tertiary)";e.currentTarget.style.background="var(--color-background-primary)";}}>
+                <i className={`ti ${ICONS[f]||"ti-folder"}`} style={{fontSize:24,color:P,display:"block",marginBottom:8}} aria-hidden="true"/>
+                <span style={{fontSize:12,fontWeight:500,lineHeight:1.3}}>{f}</span>
+              </button>
+            ))}
+          </div>
+        </div></div>
+      );
+
+      if(step==="subfield") return(
+        <div style={PAGE}><div style={INNER}>
+          <Back onClick={()=>setStep("field")}/>
+          <div style={{marginBottom:22}}>
+            <Pill label={field} color={mode==="work"?"purple":"teal"}/>
+            <h2 style={{fontSize:22,fontWeight:500,marginTop:10}}>Pick your specialization</h2>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {fields[field].map(sf=>(
+              <button key={sf} onClick={()=>{setSub(sf);setStep("tasks");}} style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:10,padding:"13px 16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:14,fontFamily:"var(--font-sans)",color:"var(--color-text-primary)",transition:"border-color 0.15s, padding-left 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=PM;e.currentTarget.style.paddingLeft="22px";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--color-border-tertiary)";e.currentTarget.style.paddingLeft="16px";}}>
+                {sf}<i className="ti ti-chevron-right" style={{fontSize:16,color:"var(--color-text-tertiary)"}} aria-hidden="true"/>
+              </button>
+            ))}
+          </div>
+        </div></div>
+      );
+
+      if(step==="tasks") return(
+        <div style={PAGE}><div style={INNER}>
+          <Back onClick={()=>setStep("subfield")}/>
+          <div style={{marginBottom:20}}>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              <Pill label={field} color={mode==="work"?"purple":"teal"}/>
+              <Pill label={sub} color="amber"/>
+            </div>
+            <h2 style={{fontSize:22,fontWeight:500,marginTop:10}}>Add your {lbl.toLowerCase()}s</h2>
+            <p style={{color:"var(--color-text-secondary)",fontSize:13,marginTop:4}}>Hard tasks go first — planned automatically.</p>
+          </div>
+
+          <div style={{...CARD,marginBottom:14}}>
+            <label style={LBL}>{lbl} name</label>
+            <FocusInput value={name} onChange={e=>setName(e.target.value)}
+              placeholder={`e.g. ${mode==="work"?"Fix login bug":"Chapter 3 review"}…`}
+              onKeyDown={e=>e.key==="Enter"&&addTask()}/>
+
+            <label style={{...LBL,marginTop:14}}>Difficulty</label>
+            <div style={{display:"flex",gap:8,marginBottom:14}}>
+              {["easy","medium","hard"].map(d=>{
+                const active=diff===d;
+                return <button key={d} onClick={()=>setDiff(d)} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${active?DIFF[d].tx:"var(--color-border-tertiary)"}`,background:active?DIFF[d].bg:"var(--color-background-primary)",color:active?DIFF[d].tx:"var(--color-text-secondary)",fontFamily:"var(--font-sans)",fontWeight:500,fontSize:13,cursor:"pointer",transition:"all 0.15s"}}>
+                  {DIFF[d].lbl}
+                </button>;
+              })}
+            </div>
+
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"var(--color-background-secondary)",borderRadius:8,padding:"9px 13px",marginBottom:14}}>
+              <span style={{fontSize:13,color:"var(--color-text-secondary)"}}>Estimated time</span>
+              <span style={{fontSize:14,fontWeight:500,color:P}}>{dur(field,diff)} min</span>
+            </div>
+            <button onClick={addTask} disabled={!name.trim()} style={{...BTNP,opacity:!name.trim()?0.5:1}}>
+              <i className="ti ti-plus" style={{verticalAlign:"-2px",marginRight:5}} aria-hidden="true"/>Add {lbl}
+            </button>
+          </div>
+
+          {tasks.length>0&&<>
+            <div style={{...CARD,marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                <h3 style={{fontSize:15,fontWeight:500}}>{lbl}s ({tasks.length})</h3>
+                <Pill label={`${tasks.reduce((s,t)=>s+t.dur,0)+(tasks.length-1)*10} min total`} color="purple"/>
+              </div>
+              {tasks.map((t,i)=>(
+                <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:i<tasks.length-1?"0.5px solid var(--color-border-tertiary)":"none"}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:500}}>{t.name}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
+                      <span style={{fontSize:11,fontWeight:500,color:DIFF[t.diff].tx,background:DIFF[t.diff].bg,padding:"2px 8px",borderRadius:100}}>{DIFF[t.diff].lbl}</span>
+                      <span style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{t.dur} min</span>
+                    </div>
+                  </div>
+                  <button onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))} style={{background:"none",border:"none",color:"var(--color-text-tertiary)",cursor:"pointer",fontSize:20,padding:4}}>×</button>
+                </div>
+              ))}
+            </div>
+            <button onClick={()=>onStart({mode,field,sub,plan:buildPlan(tasks)})} style={BTNP}>
+              Start Session <i className="ti ti-arrow-right" style={{verticalAlign:"-2px",marginLeft:4}} aria-hidden="true"/>
+            </button>
+          </>}
+        </div></div>
+      );
+      return null;
+    }
+
+    /* ═══════════════════════ SESSION PAGE ═══════════════════════ */
+    function SessionPage({data,onComplete}){
+      const {plan}=data;
+      const [bi,setBi]=useState(0);
+      const [tl,setTl]=useState(plan.blocks[0].dur*60);
+      const [running,setRunning]=useState(false);
+      const [done,setDone]=useState({});
+      const ivl=useRef(null);
+      const started=useRef(null);
+      const block=plan.blocks[bi];
+      const isBreak=block.type==="break";
+      const pct=tl/(block.dur*60);
+      const R=72, C2=2*Math.PI*R;
+      const mins=Math.floor(tl/60), secs=tl%60;
+
+      function startTimer(){
+        if(!started.current)started.current=Date.now();
+        setRunning(true);
+        ivl.current=setInterval(()=>setTl(p=>{if(p<=1){clearInterval(ivl.current);setRunning(false);return 0;}return p-1;}),1000);
+      }
+      function pauseTimer(){clearInterval(ivl.current);setRunning(false);}
+      function nextBlock(){
+        clearInterval(ivl.current);setRunning(false);
+        if(bi<plan.blocks.length-1){
+          const nb=plan.blocks[bi+1];setBi(i=>i+1);setTl(nb.dur*60);
+        } else {
+          const actual=started.current?Math.round((Date.now()-started.current)/60000):plan.work;
+          onComplete({...data,finalTasks:plan.tasks.map(t=>({...t,done:!!done[t.id]})),actual});
+        }
+      }
+      useEffect(()=>()=>clearInterval(ivl.current),[]);
+
+      return(
+        <div style={PAGE}><div style={INNER}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24}}>
+            <Pill label={isBreak?"Break time":"Focus mode"} color={isBreak?"teal":"purple"}/>
+            <span style={{fontSize:13,color:"var(--color-text-secondary)"}}>Block {Math.ceil((bi+1)/2)} / {plan.tasks.length}</span>
+          </div>
+
+          <div style={{display:"flex",justifyContent:"center",marginBottom:24}}>
+            <div style={{position:"relative",width:200,height:200}}>
+              <svg width="200" height="200" style={{transform:"rotate(-90deg)"}}>
+                <circle cx="100" cy="100" r={R} fill="none" stroke="var(--color-border-tertiary)" strokeWidth="10"/>
+                <circle cx="100" cy="100" r={R} fill="none" stroke={isBreak?TL:P} strokeWidth="10" strokeLinecap="round"
+                  strokeDasharray={C2} strokeDashoffset={C2*(1-pct)} style={{transition:"stroke-dashoffset 1s linear"}}/>
+              </svg>
+              <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
+                <div style={{fontSize:38,fontWeight:500,color:isBreak?TL:P,letterSpacing:-1}}>
+                  {String(mins).padStart(2,"0")}:{String(secs).padStart(2,"0")}
+                </div>
+                <div style={{fontSize:12,color:"var(--color-text-tertiary)",marginTop:2}}>{block.dur} min</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{...CARD,textAlign:"center",marginBottom:16}}>
+            {isBreak?(
+              <>
+                <i className="ti ti-coffee" style={{fontSize:28,color:TL,display:"block",marginBottom:8}} aria-hidden="true"/>
+                <h2 style={{fontSize:18,fontWeight:500,marginBottom:4}}>Break time</h2>
+                <p style={{color:"var(--color-text-secondary)",fontSize:13}}>Stretch, hydrate, rest your eyes</p>
+              </>
+            ):(
+              <>
+                <p style={{fontSize:11,textTransform:"uppercase",letterSpacing:"0.08em",color:"var(--color-text-tertiary)",marginBottom:6}}>Working on</p>
+                <h2 style={{fontSize:18,fontWeight:500,marginBottom:8}}>{block.task?.name}</h2>
+                <span style={{fontSize:12,fontWeight:500,color:DIFF[block.task?.diff]?.tx,background:DIFF[block.task?.diff]?.bg,padding:"3px 10px",borderRadius:100}}>{DIFF[block.task?.diff]?.lbl}</span>
+              </>
+            )}
+          </div>
+
+          <div style={{display:"flex",gap:10,marginBottom:16}}>
+            {!running
+              ?<button onClick={startTimer} style={BTNP}><i className="ti ti-player-play" style={{verticalAlign:"-2px",marginRight:5}} aria-hidden="true"/>{tl===block.dur*60?"Start":"Resume"}</button>
+              :<button onClick={pauseTimer} style={{...BTNS,width:"100%"}}><i className="ti ti-player-pause" style={{verticalAlign:"-2px",marginRight:5}} aria-hidden="true"/>Pause</button>
+            }
+            <button onClick={nextBlock} style={{...BTNS,whiteSpace:"nowrap",padding:"11px 18px"}}>
+              {bi===plan.blocks.length-1?<><i className="ti ti-flag" style={{verticalAlign:"-2px",marginRight:4}} aria-hidden="true"/>Finish</>:<>Next <i className="ti ti-arrow-right" style={{verticalAlign:"-2px"}} aria-hidden="true"/></>}
+            </button>
+          </div>
+
+          <div style={{display:"flex",gap:5,justifyContent:"center",marginBottom:16}}>
+            {plan.blocks.map((b,i)=>(
+              <div key={i} style={{width:b.type==="break"?6:12,height:6,borderRadius:100,background:i<bi?(b.type==="break"?TL:P):i===bi?(b.type==="break"?TLL:PL):"var(--color-border-tertiary)",border:i===bi?`1.5px solid ${b.type==="break"?TL:P}`:"none",transition:"all 0.3s"}}/>
+            ))}
+          </div>
+
+          <div style={CARD}>
+            <h3 style={{fontSize:14,fontWeight:500,marginBottom:12}}>Your tasks</h3>
+            {plan.tasks.map((t,i)=>(
+              <div key={t.id} onClick={()=>setDone(p=>({...p,[t.id]:!p[t.id]}))} style={{display:"flex",alignItems:"center",gap:12,padding:"9px 0",borderBottom:i<plan.tasks.length-1?"0.5px solid var(--color-border-tertiary)":"none",cursor:"pointer"}}>
+                <div style={{width:20,height:20,borderRadius:5,border:"1.5px solid",borderColor:done[t.id]?P:"var(--color-border-secondary)",background:done[t.id]?P:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
+                  {done[t.id]&&<i className="ti ti-check" style={{fontSize:13,color:"#fff"}} aria-hidden="true"/>}
+                </div>
+                <span style={{fontSize:13,flex:1,textDecoration:done[t.id]?"line-through":"none",color:done[t.id]?"var(--color-text-tertiary)":"var(--color-text-primary)",transition:"all 0.15s"}}>{t.name}</span>
+                <span style={{fontSize:12,color:"var(--color-text-tertiary)"}}>{t.dur}m</span>
+              </div>
+            ))}
+          </div>
+        </div></div>
+      );
+    }
+
+    /* ═══════════════════════ SUMMARY PAGE ═══════════════════════ */
+    function SummaryPage({data,onDone}){
+      const {finalTasks,actual,plan}=data;
+      const sc=calcScore(finalTasks,actual);
+      const done=finalTasks.filter(t=>t.done).length;
+      const scColor=sc>=80?P:sc>=60?AM:PK;
+      const R=60, C2=2*Math.PI*R;
+
+      return(
+        <div style={PAGE}><div style={INNER}>
+          <div style={{textAlign:"center",marginBottom:28}}>
+            <i className="ti ti-trophy" style={{fontSize:36,color:AM,display:"block",marginBottom:12}} aria-hidden="true"/>
+            <h1 style={{fontSize:24,fontWeight:500,marginBottom:4}}>Session complete!</h1>
+            <p style={{color:"var(--color-text-secondary)",fontSize:14}}>Here's how you did</p>
+          </div>
+
+          <div style={{display:"flex",justifyContent:"center",marginBottom:20}}>
+            <div style={{position:"relative",width:160,height:160}}>
+              <svg width="160" height="160" style={{transform:"rotate(-90deg)"}}>
+                <circle cx="80" cy="80" r={R} fill="none" stroke="var(--color-border-tertiary)" strokeWidth="10"/>
+                <circle cx="80" cy="80" r={R} fill="none" stroke={scColor} strokeWidth="10" strokeLinecap="round"
+                  strokeDasharray={C2} strokeDashoffset={C2*(1-sc/100)} style={{transition:"stroke-dashoffset 1.5s ease"}}/>
+              </svg>
+              <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
+                <div style={{fontSize:34,fontWeight:500,color:scColor}}>{sc}</div>
+                <div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>Focus Score</div>
+              </div>
+            </div>
+          </div>
+
+          <p style={{textAlign:"center",fontSize:15,fontWeight:500,marginBottom:20,color:scColor}}>
+            {sc>=80?"Outstanding work 🔥":sc>=60?"Good session 👍":"Keep pushing 💪"}
+          </p>
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14}}>
+            {[{label:"Tasks done",val:`${done}/${finalTasks.length}`,color:P},{label:"Time spent",val:`${actual}m`,color:PK},{label:"Planned",val:`${plan.work}m`,color:TL}].map(s=>(
+              <div key={s.label} style={{background:"var(--color-background-secondary)",borderRadius:10,padding:"14px 12px",textAlign:"center"}}>
+                <div style={{fontSize:20,fontWeight:500,color:s.color,marginBottom:4}}>{s.val}</div>
+                <div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{...CARD,marginBottom:14}}>
+            <h3 style={{fontSize:14,fontWeight:500,marginBottom:12}}>Task breakdown</h3>
+            {finalTasks.map((t,i)=>(
+              <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<finalTasks.length-1?"0.5px solid var(--color-border-tertiary)":"none"}}>
+                <div style={{width:18,height:18,borderRadius:5,background:t.done?P:"var(--color-border-tertiary)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  {t.done&&<i className="ti ti-check" style={{fontSize:11,color:"#fff"}} aria-hidden="true"/>}
+                </div>
+                <span style={{flex:1,fontSize:13,color:t.done?"var(--color-text-primary)":"var(--color-text-tertiary)",textDecoration:t.done?"none":"line-through"}}>{t.name}</span>
+                <span style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{t.dur}m</span>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={onDone} style={BTNP}>
+            <i className="ti ti-plus" style={{verticalAlign:"-2px",marginRight:5}} aria-hidden="true"/>New Session
+          </button>
+        </div></div>
+      );
+    }
+
+    /* ═══════════════════════ APP ═══════════════════════ */
+    function App(){
+      const [page,setPage]=useState("auth");
+      const [user,setUser]=useState(null);
+      const [phone,setPhone]=useState(null);
+      const [sd,setSd]=useState(null);
+      const [cd,setCd]=useState(null);
+
+      useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((u) => {
+          if (u && u.emailVerified) {
+            setUser(u);
+            setPage("phone");
+          } else {
+            setUser(null);
+            setPage("auth");
+          }
+        });
+        return unsubscribe;
+      }, []);
+
+      return(
+        <>
+          {page==="auth"&&<AuthPage onAuthSuccess={(u)=>{setUser(u);setPage("phone");}}/>}
+          {page==="phone"&&<PhonePage user={user} onVerified={p=>{setPhone(p);setPage("setup");}}/>}
+          {page==="setup"&&<SetupPage phone={phone} onStart={d=>{setSd(d);setPage("session");}}/>}
+          {page==="session"&&sd&&<SessionPage data={sd} onComplete={d=>{setCd(d);setPage("summary");}}/>}
+          {page==="summary"&&cd&&<SummaryPage data={cd} onDone={()=>{setSd(null);setCd(null);setPage("setup");}}/>}
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
+</body>
+</html>
