@@ -56,6 +56,9 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    
+    // Force long-polling because WebSockets sometimes hang on local environments
+    db.settings({ experimentalForceLongPolling: true });
 
     const STAFF_PIN = "1234";
 
@@ -107,19 +110,31 @@
         else { setShake(true); setPin(""); setTimeout(()=>setShake(false), 500); }
       }
 
-      useEffect(() => { if(pin.length === 4) tryPin(); }, [pin]);
+      useEffect(() => {
+        if (pin.length === 4) tryPin();
+        if (window.location.protocol === 'file:') {
+           alert("WARNING: Firebase requires a web server. Please open this file using http://localhost:3000/staff.html instead of double-clicking the file, otherwise it will lag and fail.");
+        }
+      }, [pin]);
 
       async function add() {
         if(newPhone.length < 10) return;
         setAdding(true); setErr(""); setOk("");
         try {
-          await db.collection("allowedUsers").doc(newPhone).set({ active: true, addedAt: firebase.firestore.FieldValue.serverTimestamp() });
+          // Add a 5 second timeout so it doesn't hang infinitely
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Network timeout: Could not connect to Firebase. Please check your internet, ensure you are on localhost:3000, and check Firestore security rules.")), 5000));
+          
+          await Promise.race([
+            db.collection("allowedUsers").doc(newPhone).set({ active: true, addedAt: firebase.firestore.FieldValue.serverTimestamp() }),
+            timeoutPromise
+          ]);
+          
           setOk(`${newPhone} — checked in successfully`);
           setNewPhone("+20");
           await load();
         } catch (e) {
           console.error(e);
-          setErr("Failed to add user: " + e.message);
+          setErr("Failed: " + e.message);
         }
         setAdding(false);
         setTimeout(()=>setOk(""), 3000);
