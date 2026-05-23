@@ -790,9 +790,15 @@
                 />
                 <button 
                   onClick={() => {
-                    const mailtoLink = `mailto:adhamohanedahmed@gmail.com?subject=FocusSpace Feedback&body=${encodeURIComponent(feedback)}`;
-                    window.location.href = mailtoLink;
                     setFeedbackSent(true);
+                    fetch("https://formsubmit.co/ajax/adhamohanedahmed@gmail.com", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                      body: JSON.stringify({
+                        _subject: "FocusSpace Feedback",
+                        Feedback: feedback
+                      })
+                    }).catch(err => console.error(err));
                   }}
                   style={{...BTNS, width: "100%", fontWeight: 700, opacity: feedback.trim() ? 1 : 0.5}}
                   disabled={!feedback.trim()}
