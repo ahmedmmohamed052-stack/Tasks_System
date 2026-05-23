@@ -705,7 +705,7 @@
     }
 
     /* ═══════════════════════ SUMMARY PAGE ═══════════════════════ */
-    function SummaryPage({data,onDone}){
+    function SummaryPage({data, userEmail, phone, onDone}){
       const {finalTasks,actual,plan}=data;
       const [feedback, setFeedback] = useState("");
       const [feedbackSent, setFeedbackSent] = useState(false);
@@ -796,6 +796,8 @@
                       headers: { "Content-Type": "application/json", "Accept": "application/json" },
                       body: JSON.stringify({
                         _subject: "FocusSpace Feedback",
+                        User_Email: userEmail || "Not provided",
+                        User_Phone: phone || "Not provided",
                         Feedback: feedback
                       })
                     }).catch(err => console.error(err));
@@ -840,7 +842,7 @@
           {page==="phone"&&<PhonePage user={user} onVerified={p=>{setPhone(p);setPage("setup");}}/>}
           {page==="setup"&&<SetupPage phone={phone} onStart={d=>{setSd(d);setPage("session");}}/>}
           {page==="session"&&sd&&<SessionPage data={sd} onComplete={d=>{setCd(d);setPage("summary");}}/>}
-          {page==="summary"&&cd&&<SummaryPage data={cd} onDone={()=>{setSd(null);setCd(null);setPage("setup");}}/>}
+          {page==="summary"&&cd&&<SummaryPage data={cd} userEmail={user?.email} phone={phone} onDone={()=>{setSd(null);setCd(null);setPage("setup");}}/>}
         </>
       );
     }
