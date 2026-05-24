@@ -699,15 +699,9 @@
     /* ══════════════════════════════════════════
        HOME TAB
     ══════════════════════════════════════════ */
-    function HomeTab({ user, phone }) {
+    function HomeTab({ user, phone, onFocusSpaceClick }) {
       const initials = user?.email ? user.email[0].toUpperCase() : "U";
       const displayName = user?.displayName || user?.email?.split("@")[0] || "there";
-
-      function goToFocusSpace() {
-        /* Store phone in sessionStorage so index.html can pick it up */
-        sessionStorage.setItem("fs_phone", phone);
-        window.location.href = "index.html";
-      }
 
       return (
         <div className="page-content anim-fade-up">
@@ -730,7 +724,7 @@
           <button
             id="focus-space-launch-btn"
             className="focus-hero-card"
-            onClick={goToFocusSpace}
+            onClick={onFocusSpaceClick}
             aria-label="Open Focus Space"
           >
             <div className="focus-hero-orb focus-hero-orb-1"/>
@@ -881,12 +875,12 @@
       const [phone,  setPhone]  = useState(null);
       const [tab,    setTab]    = useState("home");
 
-      /* Auth listener */
+      /* Auth listener — go straight to home after login, skip phone gate */
       useEffect(() => {
         const unsub = auth.onAuthStateChanged(u => {
           if (u && u.emailVerified) {
             setUser(u);
-            setScreen("phone");
+            setScreen("home");
           } else {
             setUser(null);
             setPhone(null);
@@ -904,14 +898,18 @@
         );
       }
 
-      if (screen === "auth") return <AuthPage onAuthSuccess={u=>{setUser(u);setScreen("phone");}}/>;
-      if (screen === "phone") return <PhonePage user={user} onVerified={p=>{setPhone(p);setScreen("home");}}/>;
+      if (screen === "auth") return <AuthPage onAuthSuccess={u=>{setUser(u);setScreen("home");}}/>;
+      /* Phone screen is shown when user clicks Focus Space on the home tab */
+      if (screen === "phone") return <PhonePage user={user} onVerified={p=>{
+        sessionStorage.setItem("fs_phone", p);
+        window.location.href = "homep.html";
+      }}/>;
 
       /* Home screen with nav */
       return (
         <>
           <Navbar user={user} activeTab={tab} onTabChange={setTab}/>
-          {tab === "home"     && <HomeTab     user={user} phone={phone}/>}
+          {tab === "home"     && <HomeTab user={user} phone={phone} onFocusSpaceClick={()=>setScreen("phone")}/>}
           {tab === "about"    && <AboutTab/>}
           {tab === "branches" && <BranchesTab/>}
         </>
