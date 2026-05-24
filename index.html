@@ -830,8 +830,21 @@
 
       useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((u) => {
-          if (u && u.emailVerified) { setUser(u); setPage("phone"); }
-          else { setUser(null); setPage("auth"); }
+          if (u && u.emailVerified) {
+            setUser(u);
+            /* If coming from home.html, phone is already verified — skip phone step */
+            const savedPhone = sessionStorage.getItem("fs_phone");
+            if (savedPhone) {
+              setPhone(savedPhone);
+              setPage("setup");
+            } else {
+              setPage("phone");
+            }
+          } else {
+            setUser(null);
+            setPhone(null);
+            setPage("auth");
+          }
         });
         return unsubscribe;
       }, []);
