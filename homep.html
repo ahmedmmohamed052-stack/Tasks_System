@@ -274,13 +274,7 @@
       const [loading, setLoading] = useState(false);
       const [err, setErr] = useState("");
       const [msg, setMsg] = useState("");
-
-      useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-          if (user && user.emailVerified) onAuthSuccess(user);
-        });
-        return unsubscribe;
-      }, []);
+      /* No onAuthStateChanged here — App owns the single auth listener to prevent race conditions */
 
       async function handleEmailAuth() {
         setLoading(true); setErr(""); setMsg("");
@@ -822,7 +816,7 @@
 
     /* ═══════════════════════ APP ═══════════════════════ */
     function App(){
-      const [page,setPage]=useState("auth");
+      const [page,setPage]=useState("loading"); // always start with loading to avoid race conditions
       const [user,setUser]=useState(null);
       const [phone,setPhone]=useState(null);
       const [sd,setSd]=useState(null);
@@ -832,27 +826,33 @@
         const unsubscribe = auth.onAuthStateChanged((u) => {
           if (u && u.emailVerified) {
             setUser(u);
-            /* If coming from home.html, phone is already verified — skip phone step */
             const savedPhone = sessionStorage.getItem("fs_phone");
             if (savedPhone) {
+              /* Came from index.html with verified phone — go straight to session planner */
               setPhone(savedPhone);
               setPage("setup");
             } else {
-              setPage("phone");
+              /* No phone verified — send back to index.html to complete the flow */
+              window.location.href = "index.html";
             }
           } else {
-            setUser(null);
-            setPhone(null);
-            setPage("auth");
+            /* Not logged in — send back to index.html */
+            window.location.href = "index.html";
           }
         });
         return unsubscribe;
       }, []);
 
+      if (page === "loading") {
+        return (
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}>
+            <i className="ti ti-loader-2" style={{fontSize:36,color:"#9B8AFF",animation:"spin 0.8s linear infinite"}} aria-hidden="true"/>
+          </div>
+        );
+      }
+
       return(
         <>
-          {page==="auth"&&<AuthPage onAuthSuccess={(u)=>{setUser(u);setPage("phone");}}/>}
-          {page==="phone"&&<PhonePage user={user} onVerified={p=>{setPhone(p);setPage("setup");}}/>}
           {page==="setup"&&<SetupPage phone={phone} onStart={d=>{setSd(d);setPage("session");}}/>}
           {page==="session"&&sd&&<SessionPage data={sd} onComplete={d=>{setCd(d);setPage("summary");}}/>}
           {page==="summary"&&cd&&<SummaryPage data={cd} userEmail={user?.email} phone={phone} onDone={()=>{setSd(null);setCd(null);setPage("setup");}}/>}
