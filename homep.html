@@ -522,7 +522,7 @@
       }
 
       return (
-        <div style={{...CARD, display:"flex", flexDirection:"column", height:320, padding:"14px", marginTop:14}}>
+        <div style={{...CARD, display:"flex", flexDirection:"column", height:480, padding:"16px", marginTop:0}}>
           {/* Header */}
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexShrink:0}}>
             <div style={{width:30,height:30,background:`linear-gradient(135deg,${P},${PK})`,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:`0 3px 10px rgba(111,66,255,0.3)`}}>
@@ -682,78 +682,88 @@
 
       if(step==="tasks") return(
         <div style={PAGE} className="page-anim">
-          <div style={{maxWidth:860,margin:"0 auto",padding:"28px 20px",display:"flex",gap:20,alignItems:"flex-start",flexWrap:"wrap"}}>
+          <div style={{maxWidth:1100,margin:"0 auto",padding:"28px 20px",display:"flex",gap:20,alignItems:"flex-start",flexWrap:"wrap"}}>
 
-            {/* ── LEFT: task input ── */}
-            <div style={{flex:"1 1 300px",minWidth:0}}>
-              <Back onClick={()=>setStep("subfield")}/>
-              <div style={{marginBottom:22}}>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  <Pill label={field} color={mode==="work"?"purple":"teal"}/>
-                  <Pill label={sub} color="amber"/>
-                  {focusSys&&<Pill label={focusSys.name} color="pink"/>}
-                </div>
-                <h2 style={{fontSize:24,fontWeight:800,marginTop:12,letterSpacing:"-0.02em"}}>Add your {lbl.toLowerCase()}s</h2>
-                <p style={{color:"var(--color-text-secondary)",fontSize:13,marginTop:5,fontWeight:500}}>Hard tasks go first — planned automatically.</p>
-              </div>
+            {/* ── LEFT: task input + AI chatbot ── */}
+            <div style={{flex:"1 1 600px",minWidth:0,display:"flex",gap:16,alignItems:"flex-start",flexWrap:"wrap"}}>
 
-              <div style={{...CARD,marginBottom:14}}>
-                <label style={LBL}>{lbl} name</label>
-                <FocusInput value={name} onChange={e=>setName(e.target.value)}
-                  placeholder={`e.g. ${mode==="work"?"Fix login bug":"Chapter 3 review"}…`}
-                  onKeyDown={e=>e.key==="Enter"&&addTask()}/>
-
-                <label style={{...LBL,marginTop:16}}>Difficulty</label>
-                <div style={{display:"flex",gap:8,marginBottom:14}}>
-                  {["easy","medium","hard"].map(d=>{
-                    const active=diff===d;
-                    return <button key={d} onClick={()=>setDiff(d)}
-                      style={{flex:1,padding:"10px 0",borderRadius:12,border:`1.5px solid ${active?DIFF[d].tx:"var(--color-border-tertiary)"}`,
-                        background:active?DIFF[d].bg:"rgba(255,255,255,0.6)",
-                        color:active?DIFF[d].tx:"var(--color-text-secondary)",
-                        fontFamily:"var(--font-sans)",fontWeight:700,fontSize:13,cursor:"pointer",transition:"all 0.18s",
-                        boxShadow:active?`0 2px 10px rgba(0,0,0,0.08)`:"none"}}>
-                      {DIFF[d].lbl}
-                    </button>;
-                  })}
-                </div>
-
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"linear-gradient(135deg,rgba(237,232,255,0.7),rgba(220,253,244,0.5))",borderRadius:12,padding:"11px 15px",marginBottom:16,border:"1px solid rgba(111,66,255,0.1)"}}>
-                  <span style={{fontSize:13,color:"var(--color-text-secondary)",fontWeight:500}}>Estimated time</span>
-                  <span style={{fontSize:15,fontWeight:800,color:P,fontFamily:"var(--font-display)"}}>{getTaskDur(focusSys,field,diff)} min</span>
-                </div>
-                <button onClick={addTask} disabled={!name.trim()} style={{...BTNP,opacity:!name.trim()?0.5:1}}>
-                  <i className="ti ti-plus" style={{verticalAlign:"-2px",marginRight:5}} aria-hidden="true"/>Add {lbl}
-                </button>
-              </div>
-
-              {tasks.length>0&&<>
-                <div style={{...CARD,marginBottom:14}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-                    <h3 style={{fontSize:15,fontWeight:800,letterSpacing:"-0.01em"}}>{lbl}s ({tasks.length})</h3>
-                    <Pill label={`${buildPlanWithFocus(tasks,focusSys).total} min total`} color="purple"/>
+              {/* Task input */}
+              <div style={{flex:"1 1 280px",minWidth:0}}>
+                <Back onClick={()=>setStep("subfield")}/>
+                <div style={{marginBottom:22}}>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    <Pill label={field} color={mode==="work"?"purple":"teal"}/>
+                    <Pill label={sub} color="amber"/>
+                    {focusSys&&<Pill label={focusSys.name} color="pink"/>}
                   </div>
-                  {tasks.map((t,i)=>(
-                    <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 0",borderBottom:i<tasks.length-1?"1px solid var(--color-border-tertiary)":"none"}}>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:14,fontWeight:600}}>{t.name}</div>
-                        <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4}}>
-                          <span style={{fontSize:11,fontWeight:700,color:DIFF[t.diff].tx,background:DIFF[t.diff].bg,padding:"2px 9px",borderRadius:100}}>{DIFF[t.diff].lbl}</span>
-                          <span style={{fontSize:11,color:"var(--color-text-tertiary)",fontWeight:500}}>{t.dur} min</span>
-                        </div>
-                      </div>
-                      <button onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))} style={{background:"rgba(255,77,141,0.1)",border:"none",color:PK,cursor:"pointer",fontSize:18,padding:"4px 8px",borderRadius:8,lineHeight:1}}>×</button>
-                    </div>
-                  ))}
+                  <h2 style={{fontSize:24,fontWeight:800,marginTop:12,letterSpacing:"-0.02em"}}>Add your {lbl.toLowerCase()}s</h2>
+                  <p style={{color:"var(--color-text-secondary)",fontSize:13,marginTop:5,fontWeight:500}}>Hard tasks go first — planned automatically.</p>
                 </div>
-                <button onClick={()=>onStart({mode,field,sub,focusSys,plan:buildPlanWithFocus(tasks,focusSys)})} style={BTNP}>
-                  Start Session <i className="ti ti-arrow-right" style={{verticalAlign:"-2px",marginLeft:4}} aria-hidden="true"/>
-                </button>
-              </>}
+
+                <div style={{...CARD,marginBottom:14}}>
+                  <label style={LBL}>{lbl} name</label>
+                  <FocusInput value={name} onChange={e=>setName(e.target.value)}
+                    placeholder={`e.g. ${mode==="work"?"Fix login bug":"Chapter 3 review"}…`}
+                    onKeyDown={e=>e.key==="Enter"&&addTask()}/>
+
+                  <label style={{...LBL,marginTop:16}}>Difficulty</label>
+                  <div style={{display:"flex",gap:8,marginBottom:14}}>
+                    {["easy","medium","hard"].map(d=>{
+                      const active=diff===d;
+                      return <button key={d} onClick={()=>setDiff(d)}
+                        style={{flex:1,padding:"10px 0",borderRadius:12,border:`1.5px solid ${active?DIFF[d].tx:"var(--color-border-tertiary)"}`,
+                          background:active?DIFF[d].bg:"rgba(255,255,255,0.6)",
+                          color:active?DIFF[d].tx:"var(--color-text-secondary)",
+                          fontFamily:"var(--font-sans)",fontWeight:700,fontSize:13,cursor:"pointer",transition:"all 0.18s",
+                          boxShadow:active?`0 2px 10px rgba(0,0,0,0.08)`:"none"}}>
+                        {DIFF[d].lbl}
+                      </button>;
+                    })}
+                  </div>
+
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"linear-gradient(135deg,rgba(237,232,255,0.7),rgba(220,253,244,0.5))",borderRadius:12,padding:"11px 15px",marginBottom:16,border:"1px solid rgba(111,66,255,0.1)"}}>
+                    <span style={{fontSize:13,color:"var(--color-text-secondary)",fontWeight:500}}>Estimated time</span>
+                    <span style={{fontSize:15,fontWeight:800,color:P,fontFamily:"var(--font-display)"}}>{getTaskDur(focusSys,field,diff)} min</span>
+                  </div>
+                  <button onClick={addTask} disabled={!name.trim()} style={{...BTNP,opacity:!name.trim()?0.5:1}}>
+                    <i className="ti ti-plus" style={{verticalAlign:"-2px",marginRight:5}} aria-hidden="true"/>Add {lbl}
+                  </button>
+                </div>
+
+                {tasks.length>0&&<>
+                  <div style={{...CARD,marginBottom:14}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                      <h3 style={{fontSize:15,fontWeight:800,letterSpacing:"-0.01em"}}>{lbl}s ({tasks.length})</h3>
+                      <Pill label={`${buildPlanWithFocus(tasks,focusSys).total} min total`} color="purple"/>
+                    </div>
+                    {tasks.map((t,i)=>(
+                      <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 0",borderBottom:i<tasks.length-1?"1px solid var(--color-border-tertiary)":"none"}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:14,fontWeight:600}}>{t.name}</div>
+                          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4}}>
+                            <span style={{fontSize:11,fontWeight:700,color:DIFF[t.diff].tx,background:DIFF[t.diff].bg,padding:"2px 9px",borderRadius:100}}>{DIFF[t.diff].lbl}</span>
+                            <span style={{fontSize:11,color:"var(--color-text-tertiary)",fontWeight:500}}>{t.dur} min</span>
+                          </div>
+                        </div>
+                        <button onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))} style={{background:"rgba(255,77,141,0.1)",border:"none",color:PK,cursor:"pointer",fontSize:18,padding:"4px 8px",borderRadius:8,lineHeight:1}}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={()=>onStart({mode,field,sub,focusSys,plan:buildPlanWithFocus(tasks,focusSys)})} style={BTNP}>
+                    Start Session <i className="ti ti-arrow-right" style={{verticalAlign:"-2px",marginLeft:4}} aria-hidden="true"/>
+                  </button>
+                </>}
+              </div>
+
+              {/* ── AI Chatbot (next to task input) ── */}
+              <div style={{flex:"1 1 280px",minWidth:0,position:"sticky",top:24}}>
+                <AIChatbot field={field} sub={sub}/>
+              </div>
+
             </div>
 
             {/* ── RIGHT: focus system selector ── */}
-            <div style={{flex:"0 0 230px",position:"sticky",top:24}}>
+            <div style={{flex:"0 0 220px",position:"sticky",top:24}}>
               <div style={{marginBottom:14}}>
                 <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"var(--color-text-secondary)",marginBottom:4}}>Focus System</div>
                 <p style={{fontSize:11,color:"var(--color-text-tertiary)",fontWeight:500,lineHeight:1.5}}>Choose how to structure your session</p>
@@ -781,7 +791,6 @@
                     onMouseEnter={e=>{if(!active){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 24px rgba(111,66,255,0.12)";}}}
                     onMouseLeave={e=>{if(!active){e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 2px 16px rgba(111,66,255,0.06)";}}}
                   >
-                    {/* icon + name row */}
                     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
                       <div style={{
                         width:40,height:40,borderRadius:12,flexShrink:0,
@@ -797,11 +806,7 @@
                         {active&&<div style={{fontSize:10,fontWeight:700,color:fs.color,letterSpacing:"0.04em",textTransform:"uppercase",marginTop:1}}>Active</div>}
                       </div>
                     </div>
-
-                    {/* description */}
                     <p style={{fontSize:11,color:"var(--color-text-secondary)",fontWeight:500,lineHeight:1.45,marginBottom:9}}>{fs.desc}</p>
-
-                    {/* timing chip */}
                     <div style={{
                       background:active?"rgba(255,255,255,0.65)":"rgba(245,243,255,0.8)",
                       borderRadius:10,padding:"7px 10px",
@@ -820,9 +825,6 @@
                   Optional — tasks auto-scheduled if none selected
                 </p>
               )}
-
-              {/* ── AI Chatbot ── */}
-              <AIChatbot field={field} sub={sub}/>
             </div>
 
           </div>
