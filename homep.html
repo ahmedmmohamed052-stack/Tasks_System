@@ -88,6 +88,22 @@
     .sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0; }
     ::-webkit-scrollbar { width:4px; }
     ::-webkit-scrollbar-thumb { background:rgba(111,66,255,0.2); border-radius:2px; }
+
+    /* Responsive layout for tasks step */
+    .tasks-layout {
+      display: flex; gap: 20px; align-items: flex-start;
+      max-width: 1200px; margin: 0 auto; padding: 28px 20px;
+    }
+    .tasks-left { flex: 0 0 280px; position: sticky; top: 24px; }
+    .tasks-center { flex: 1 1 300px; min-width: 0; }
+    .tasks-right { flex: 0 0 220px; position: sticky; top: 24px; }
+
+    @media (max-width: 900px) {
+      .tasks-layout { flex-direction: column; align-items: stretch; }
+      .tasks-left { order: 3; flex: auto; position: static; width: 100%; }
+      .tasks-center { order: 1; flex: auto; width: 100%; }
+      .tasks-right { order: 2; flex: auto; position: static; width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -682,15 +698,15 @@
 
       if(step==="tasks") return(
         <div style={PAGE} className="page-anim">
-          <div style={{maxWidth:1200,margin:"0 auto",padding:"28px 20px",display:"flex",gap:20,alignItems:"flex-start"}}>
+          <div className="tasks-layout">
 
             {/* ── LEFT: AI Chatbot ── */}
-            <div style={{flex:"0 0 280px",position:"sticky",top:24}}>
+            <div className="tasks-left">
               <AIChatbot field={field} sub={sub}/>
             </div>
 
             {/* ── CENTER: task input ── */}
-            <div style={{flex:"1 1 300px",minWidth:0}}>
+            <div className="tasks-center">
               <Back onClick={()=>setStep("subfield")}/>
               <div style={{marginBottom:22}}>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
@@ -758,7 +774,7 @@
             </div>
 
             {/* ── RIGHT: focus system selector ── */}
-            <div style={{flex:"0 0 220px",position:"sticky",top:24}}>
+            <div className="tasks-right">
               <div style={{marginBottom:14}}>
                 <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"var(--color-text-secondary)",marginBottom:4}}>Focus System</div>
                 <p style={{fontSize:11,color:"var(--color-text-tertiary)",fontWeight:500,lineHeight:1.5}}>Choose how to structure your session</p>
