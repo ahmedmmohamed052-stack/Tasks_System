@@ -179,135 +179,135 @@
     // Format: "Subfield Name": { easy: midpoint, medium: midpoint, hard: midpoint }
     // Midpoints derived from research ranges in the optimal task time dataset
     const SUBFIELD_TIMES = {
-      // Programming & Software Dev
-      "Frontend Development":       {easy:20, medium:35, hard:70},
-      "Backend / API":               {easy:25, medium:45, hard:75},
-      "Debugging":                   {easy:15, medium:35, hard:63},
-      "Code Review":                 {easy:15, medium:33, hard:58},
-      "DevOps / Infrastructure":     {easy:20, medium:40, hard:75},
-      "Database & SQL":              {easy:15, medium:33, hard:65},
-      "Cybersecurity":               {easy:25, medium:45, hard:75},
-      // AI / ML
-      "Data Cleaning & EDA":         {easy:20, medium:40, hard:65},
-      "Feature Engineering":         {easy:25, medium:45, hard:68},
-      "Model Training & Tuning":     {easy:28, medium:48, hard:75},
-      "Research Paper Reading":      {easy:28, medium:45, hard:65},
-      "Statistical Analysis":        {easy:20, medium:40, hard:65},
-      // Design
-      "UI/UX Research":              {easy:25, medium:45, hard:75},
-      "Wireframing & Prototyping":   {easy:20, medium:40, hard:73},
-      "Graphic / Visual Design":     {easy:25, medium:45, hard:75},
-      "Motion / Video Editing":      {easy:28, medium:48, hard:75},
-      "3D Modeling":                 {easy:28, medium:53, hard:78},
-      "Photography & Post":          {easy:20, medium:35, hard:60},
-      // Writing & Media
-      "Copywriting (Short-form)":    {easy:20, medium:35, hard:58},
-      "Long-form Articles":          {easy:33, medium:55, hard:78},
-      "Editing & Proofreading":      {easy:20, medium:40, hard:65},
-      "Scriptwriting":               {easy:25, medium:45, hard:70},
-      "Academic / Technical Writing":{easy:33, medium:55, hard:78},
-      // Business & Management
-      "Email & Admin":               {easy:20, medium:33, hard:53},
-      "Project Planning":            {easy:18, medium:40, hard:65},
-      "Marketing Strategy":          {easy:25, medium:45, hard:70},
-      "Sales & CRM":                 {easy:20, medium:35, hard:58},
-      "Financial Analysis":          {easy:25, medium:45, hard:68},
-      "HR & Recruitment":            {easy:20, medium:33, hard:53},
-      // Medicine (Work)
-      "Patient Consultation":        {easy:20, medium:33, hard:50},
-      "Clinical Documentation":      {easy:18, medium:33, hard:58},
-      "Diagnostic Reasoning":        {easy:25, medium:40, hard:58},
-      "Medication Review":           {easy:15, medium:33, hard:53},
-      "Procedural / Surgical":       {easy:28, medium:48, hard:75},
-      // Law
-      "Legal Research":              {easy:25, medium:45, hard:73},
-      "Contract Review":             {easy:25, medium:45, hard:73},
-      "Document Drafting":           {easy:25, medium:45, hard:75},
-      "Case Analysis":               {easy:30, medium:50, hard:75},
-      // Engineering (Work)
-      "Civil & Structural":          {easy:33, medium:53, hard:78},
-      "Electrical & Circuit Design": {easy:28, medium:48, hard:75},
-      "Mechanical & CAD":            {easy:33, medium:53, hard:75},
-      "Chemical & Process":          {easy:33, medium:53, hard:78},
-      "Architecture & Drafting":     {easy:28, medium:48, hard:75},
-      // Languages (Work)
-      "Translation (General)":       {easy:25, medium:45, hard:68},
-      "Localization":                {easy:20, medium:40, hard:63},
-      "Language Teaching":           {easy:25, medium:45, hard:68},
-      // Mathematics (Study)
-      "Algebra & Pre-Calculus":      {easy:25, medium:38, hard:53},
-      "Calculus":                    {easy:25, medium:40, hard:58},
-      "Discrete Mathematics":        {easy:25, medium:40, hard:58},
-      "Linear Algebra":              {easy:25, medium:40, hard:58},
-      "Statistics & Probability":    {easy:25, medium:38, hard:53},
-      // Physics
-      "Classical Mechanics":         {easy:25, medium:38, hard:55},
-      "Electromagnetism":            {easy:25, medium:40, hard:58},
-      "Thermodynamics (Physics)":    {easy:25, medium:40, hard:58},
-      "Quantum Mechanics":           {easy:30, medium:45, hard:63},
-      "Optics & Waves":              {easy:25, medium:38, hard:55},
-      // Chemistry
-      "General Chemistry":           {easy:25, medium:38, hard:55},
-      "Organic Chemistry":           {easy:25, medium:40, hard:60},
-      "Physical Chemistry":          {easy:30, medium:45, hard:63},
-      "Analytical Chemistry":        {easy:25, medium:40, hard:60},
-      "Biochemistry":                {easy:25, medium:40, hard:60},
-      // Biology
-      "Cell Biology":                {easy:25, medium:38, hard:55},
-      "Molecular Biology & Genetics":{easy:25, medium:40, hard:58},
-      "Microbiology":                {easy:25, medium:38, hard:55},
-      "Ecology & Environmental Bio": {easy:25, medium:38, hard:53},
-      "Human Physiology":            {easy:25, medium:40, hard:58},
-      // Medicine (Study)
-      "Anatomy":                     {easy:25, medium:38, hard:55},
-      "Physiology":                  {easy:25, medium:40, hard:58},
-      "Pharmacology":                {easy:25, medium:40, hard:58},
-      "Pathology":                   {easy:25, medium:40, hard:58},
-      "Microbiology & Immunology":   {easy:20, medium:35, hard:55},
-      "Clinical Reasoning":          {easy:25, medium:45, hard:63},
-      // Engineering (Study)
-      "Statics & Dynamics":          {easy:30, medium:45, hard:68},
-      "Thermodynamics (Eng)":        {easy:30, medium:45, hard:68},
-      "Circuit Theory":              {easy:25, medium:40, hard:63},
-      "Fluid Mechanics":             {easy:30, medium:45, hard:68},
-      "Materials Science":           {easy:25, medium:40, hard:63},
-      // Languages (Study)
-      "Vocabulary":                  {easy:15, medium:25, hard:38},
-      "Grammar & Syntax":            {easy:20, medium:33, hard:48},
-      "Reading Comprehension":       {easy:20, medium:33, hard:48},
-      "Writing & Composition":       {easy:25, medium:40, hard:58},
-      "Listening & Speaking":        {easy:20, medium:33, hard:48},
-      // Social Sciences
-      "Psychology":                  {easy:25, medium:38, hard:55},
-      "Sociology":                   {easy:25, medium:38, hard:55},
-      "Political Science":           {easy:25, medium:38, hard:55},
-      "Philosophy":                  {easy:28, medium:45, hard:60},
-      "Economics":                   {easy:25, medium:40, hard:58},
-      "History":                     {easy:25, medium:38, hard:55},
-      // High School — Science
-      "Pure Mathematics":            {easy:25, medium:35, hard:50},
-      "Physics":                     {easy:23, medium:33, hard:50},
-      "Chemistry":                   {easy:20, medium:33, hard:48},
-      "Biology":                     {easy:25, medium:33, hard:48},
-      "Arabic Language":             {easy:20, medium:30, hard:45},
-      "English Language":            {easy:20, medium:30, hard:45},
-      // High School — Arts
-      "Geography":                   {easy:20, medium:30, hard:43},
-      "Philosophy & Logic":          {easy:25, medium:35, hard:48},
-      // Middle School
-      "Mathematics":                 {easy:18, medium:25, hard:33},
-      "Science":                     {easy:18, medium:25, hard:33},
-      "History & Geography":         {easy:18, medium:25, hard:30},
-      "Religious Studies":           {easy:13, medium:20, hard:28},
-      // Primary School
-      "Science & Nature":            {easy:10, medium:13, hard:16},
-      "Social Studies":              {easy:9,  medium:13, hard:15},
-    };
-
-    /* Parse time range string like "25–45" → midpoint integer */
-    const midpoint = str => {
-      const parts = str.replace("–","-").split("-").map(Number);
-      return Math.round((parts[0]+parts[1])/2);
+      // ── WF: Technology ──
+      "Programming":            {easy:20, medium:40, hard:75},
+      "Web Development":        {easy:20, medium:38, hard:70},
+      "Mobile Development":     {easy:25, medium:45, hard:75},
+      "AI / Machine Learning":  {easy:28, medium:48, hard:75},
+      "Cybersecurity":          {easy:25, medium:45, hard:75},
+      "Data Science":           {easy:20, medium:40, hard:65},
+      "DevOps":                 {easy:20, medium:40, hard:75},
+      "Databases":              {easy:15, medium:33, hard:65},
+      "Embedded Systems":       {easy:25, medium:45, hard:75},
+      // ── WF: Design ──
+      "Graphic Design":         {easy:25, medium:45, hard:75},
+      "UI/UX":                  {easy:25, medium:45, hard:75},
+      "Motion Graphics":        {easy:28, medium:48, hard:75},
+      "3D Design":              {easy:28, medium:53, hard:78},
+      "Video Editing":          {easy:28, medium:48, hard:75},
+      "Photography":            {easy:20, medium:35, hard:60},
+      // ── WF: Business & Management ──
+      "Marketing":              {easy:25, medium:45, hard:70},
+      "Sales":                  {easy:20, medium:35, hard:58},
+      "Accounting":             {easy:20, medium:38, hard:60},
+      "Human Resources":        {easy:20, medium:33, hard:53},
+      "Project Management":     {easy:18, medium:40, hard:65},
+      "Entrepreneurship":       {easy:25, medium:45, hard:75},
+      "Financial Analysis":     {easy:25, medium:45, hard:68},
+      // ── WF: Medicine & Health ──
+      "Medicine":               {easy:25, medium:40, hard:58},
+      "Pharmacy":               {easy:20, medium:38, hard:55},
+      "Nursing":                {easy:20, medium:35, hard:55},
+      "Dentistry":              {easy:20, medium:38, hard:58},
+      "Physical Therapy":       {easy:20, medium:35, hard:55},
+      "Nutrition":              {easy:18, medium:30, hard:50},
+      // ── WF: Engineering ──
+      "Civil Engineering":      {easy:33, medium:53, hard:78},
+      "Electrical Engineering": {easy:28, medium:48, hard:75},
+      "Mechanical Engineering": {easy:33, medium:53, hard:75},
+      "Chemical Engineering":   {easy:33, medium:53, hard:78},
+      "Architecture":           {easy:28, medium:48, hard:75},
+      "Electronics":            {easy:28, medium:48, hard:75},
+      // ── WF: Law ──
+      "Legal Research":         {easy:25, medium:45, hard:73},
+      "Contracts":              {easy:25, medium:45, hard:73},
+      "Commercial Law":         {easy:25, medium:45, hard:73},
+      "International Law":      {easy:25, medium:45, hard:75},
+      // ── WF: Languages & Translation ──
+      "Translation":            {easy:25, medium:45, hard:68},
+      "Language Teaching":      {easy:25, medium:45, hard:68},
+      "Linguistics":            {easy:25, medium:45, hard:65},
+      // ── WF: Media & Writing ──
+      "Journalism":             {easy:30, medium:50, hard:75},
+      "Content Writing":        {easy:28, medium:45, hard:70},
+      "Copywriting":            {easy:20, medium:35, hard:58},
+      "Authoring":              {easy:33, medium:55, hard:78},
+      "Script Writing":         {easy:25, medium:45, hard:70},
+      // ── WF: Education ──
+      "Studying":               {easy:25, medium:38, hard:55},
+      "Academic Research":      {easy:33, medium:55, hard:78},
+      "Exam Preparation":       {easy:25, medium:40, hard:58},
+      "Curriculum Design":      {easy:25, medium:45, hard:68},
+      // ── WF: Science (work) ──
+      "Mathematics":            {easy:25, medium:38, hard:55},
+      "Physics":                {easy:25, medium:38, hard:55},
+      "Chemistry":              {easy:25, medium:38, hard:55},
+      "Biology":                {easy:25, medium:38, hard:55},
+      "Statistics":             {easy:25, medium:38, hard:55},
+      // ── WF: Arts ──
+      "Music":                  {easy:20, medium:35, hard:55},
+      "Drawing":                {easy:20, medium:35, hard:55},
+      "Fine Arts":              {easy:20, medium:38, hard:60},
+      "Creative Writing":       {easy:20, medium:38, hard:60},
+      // ── SF: Technology & CS ──
+      "Programming Fundamentals":{easy:20, medium:38, hard:70},
+      "Data Structures":        {easy:25, medium:45, hard:75},
+      "AI & ML":                {easy:28, medium:48, hard:75},
+      // ── SF: Mathematics ──
+      "Algebra":                {easy:25, medium:38, hard:53},
+      "Calculus":               {easy:25, medium:40, hard:58},
+      "Discrete Math":          {easy:25, medium:40, hard:58},
+      "Linear Algebra":         {easy:25, medium:40, hard:58},
+      // ── SF: Natural Sciences ──
+      "Geology":                {easy:20, medium:33, hard:50},
+      "Biochemistry":           {easy:25, medium:40, hard:60},
+      // ── SF: Medicine & Health ──
+      "Anatomy":                {easy:25, medium:38, hard:55},
+      "Physiology":             {easy:25, medium:40, hard:58},
+      "Pharmacology":           {easy:25, medium:40, hard:58},
+      "Pathology":              {easy:25, medium:40, hard:58},
+      "Microbiology":           {easy:25, medium:38, hard:55},
+      // ── SF: Engineering ──
+      "Civil":                  {easy:33, medium:53, hard:78},
+      "Electrical":             {easy:28, medium:48, hard:75},
+      "Mechanical":             {easy:33, medium:53, hard:75},
+      "Chemical":               {easy:33, medium:53, hard:78},
+      "Thermodynamics":         {easy:30, medium:45, hard:68},
+      // ── SF: Business & Economics ──
+      "Microeconomics":         {easy:25, medium:40, hard:58},
+      "Macroeconomics":         {easy:25, medium:40, hard:58},
+      "Accounting":             {easy:20, medium:38, hard:60},
+      "Finance":                {easy:25, medium:45, hard:68},
+      "Marketing":              {easy:25, medium:45, hard:70},
+      // ── SF: Law ──
+      "Constitutional Law":     {easy:25, medium:45, hard:73},
+      "Criminal Law":           {easy:25, medium:45, hard:73},
+      "Civil Law":              {easy:25, medium:45, hard:73},
+      // ── SF: Languages ──
+      "Arabic":                 {easy:20, medium:30, hard:45},
+      "English":                {easy:20, medium:30, hard:45},
+      "French":                 {easy:20, medium:33, hard:48},
+      "German":                 {easy:20, medium:33, hard:48},
+      "Spanish":                {easy:20, medium:33, hard:48},
+      "Chinese":                {easy:20, medium:35, hard:50},
+      // ── SF: Social Sciences ──
+      "Sociology":              {easy:25, medium:38, hard:55},
+      "Psychology":             {easy:25, medium:38, hard:55},
+      "Political Science":      {easy:25, medium:38, hard:55},
+      "Philosophy":             {easy:28, medium:45, hard:60},
+      // ── SF: History & Humanities ──
+      "Ancient History":        {easy:25, medium:38, hard:55},
+      "Modern History":         {easy:25, medium:38, hard:55},
+      "Islamic History":        {easy:25, medium:38, hard:55},
+      "Cultural Studies":       {easy:25, medium:38, hard:55},
+      // ── SF: High School — Science ──
+      "Pure Mathematics":       {easy:25, medium:35, hard:50},
+      // ── SF: High School — Arts ──
+      "History":                {easy:23, medium:33, hard:48},
+      "Geography":              {easy:20, medium:30, hard:43},
+      // ── SF: Middle School / Primary School ──
+      "Science":                {easy:18, medium:25, hard:35},
+      "Social Studies":         {easy:9,  medium:13, hard:15},
     };
 
     /* ── subfield-aware duration helper ── */
