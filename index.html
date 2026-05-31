@@ -702,6 +702,27 @@
     function HomeTab({ user, phone, onFocusSpaceClick }) {
       const initials = user?.email ? user.email[0].toUpperCase() : "U";
       const displayName = user?.displayName || user?.email?.split("@")[0] || "there";
+      const [stats, setStats] = React.useState(null);
+      const [statsLoading, setStatsLoading] = React.useState(true);
+
+      React.useEffect(() => {
+        if (!user) return;
+        db.collection("users").doc(user.uid).collection("sessions")
+          .orderBy("createdAt","desc")
+          .limit(50)
+          .get()
+          .then(snap => {
+            const sessions = snap.docs.map(d => d.data());
+            if (sessions.length === 0) { setStats({ count:0, best:null, last:null }); }
+            else {
+              const best = Math.max(...sessions.map(s => s.score||0));
+              const last = sessions[0];
+              setStats({ count: sessions.length, best, last });
+            }
+          })
+          .catch(() => setStats(null))
+          .finally(() => setStatsLoading(false));
+      }, [user]);
 
       return (
         <div className="page-content anim-fade-up">
@@ -752,24 +773,30 @@
           <div className="stats-row">
             <div className="stat-card">
               <div className="stat-icon" style={{background:"linear-gradient(135deg,#EDE8FF,#DDD4FF)"}}>
-                <i className="ti ti-brain" style={{color:"#6F42FF"}} aria-hidden="true"/>
+                <i className="ti ti-flame" style={{color:"#6F42FF"}} aria-hidden="true"/>
               </div>
-              <div className="stat-label">Mode</div>
-              <div className="stat-value" style={{fontSize:14,fontWeight:700,color:"#6B5B8E"}}>Work / Study</div>
+              <div className="stat-label">Sessions</div>
+              <div className="stat-value">
+                {statsLoading ? <i className="ti ti-loader-2" style={{fontSize:16,animation:"spin 0.8s linear infinite",color:"#9B8AFF"}}/> : stats ? stats.count : "—"}
+              </div>
             </div>
             <div className="stat-card">
               <div className="stat-icon" style={{background:"linear-gradient(135deg,#DCFDF4,#C8F7EC)"}}>
-                <i className="ti ti-clock" style={{color:"#00C896"}} aria-hidden="true"/>
+                <i className="ti ti-trophy" style={{color:"#00C896"}} aria-hidden="true"/>
               </div>
-              <div className="stat-label">Sessions</div>
-              <div className="stat-value">∞</div>
+              <div className="stat-label">Best Score</div>
+              <div className="stat-value" style={{color: stats?.best >= 80 ? "#6F42FF" : stats?.best >= 60 ? "#FF9500" : "#FF4D8D"}}>
+                {statsLoading ? <i className="ti ti-loader-2" style={{fontSize:16,animation:"spin 0.8s linear infinite",color:"#9B8AFF"}}/> : stats?.best != null ? stats.best : "—"}
+              </div>
             </div>
             <div className="stat-card">
               <div className="stat-icon" style={{background:"linear-gradient(135deg,#FFE8F2,#FFD4E8)"}}>
-                <i className="ti ti-trophy" style={{color:"#FF4D8D"}} aria-hidden="true"/>
+                <i className="ti ti-clock" style={{color:"#FF4D8D"}} aria-hidden="true"/>
               </div>
-              <div className="stat-label">Score</div>
-              <div className="stat-value">—</div>
+              <div className="stat-label">Last Session</div>
+              <div className="stat-value" style={{fontSize:13,fontWeight:700,color:"#6B5B8E"}}>
+                {statsLoading ? <i className="ti ti-loader-2" style={{fontSize:16,animation:"spin 0.8s linear infinite",color:"#9B8AFF"}}/> : stats?.last ? (stats.last.sub||stats.last.field||"—") : "—"}
+              </div>
             </div>
           </div>
         </div>

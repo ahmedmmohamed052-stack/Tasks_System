@@ -1142,6 +1142,24 @@
       const scColor2=sc>=80?PK:sc>=60?"#FFB800":P;
       const R=60, C2=2*Math.PI*R;
 
+      /* save session to Firestore once on mount */
+      useEffect(()=>{
+        const user=auth.currentUser;
+        if(!user) return;
+        db.collection("users").doc(user.uid).collection("sessions").add({
+          score:      sc,
+          tasksTotal: finalTasks.length,
+          tasksDone:  done,
+          plannedMin: plan.work,
+          actualMin:  actual,
+          field:      data.field||"",
+          sub:        data.sub||"",
+          mode:       data.mode||"",
+          focusSys:   data.focusSys?.name||"None",
+          createdAt:  firebase.firestore.FieldValue.serverTimestamp(),
+        }).catch(()=>{});
+      },[]);
+
       return(
         <div style={PAGE} className="page-anim"><div style={INNER}>
           <div style={{textAlign:"center",marginBottom:28}}>
