@@ -175,13 +175,159 @@
     const grp = f => GA.has(f)?"A":GB.has(f)?"B":"C";
     const dur = (f,d) => TM[grp(f)][d]??30;
 
-    /* ── focus system duration helper ── */
-    const getTaskDur = (fs,f,d) => {
-      if(!fs) return dur(f,d);
-      if(fs.id==="eat_frog")     return d==="hard"?60:45;
-      if(fs.id==="time_blocking")return d==="hard"?120:d==="medium"?90:60;
-      if(fs.id==="kanban"||!fs.workDur) return dur(f,d);
-      return fs.workDur;
+    /* ── subfield-specific optimal times (research-based) ── */
+    // Format: "Subfield Name": { easy: midpoint, medium: midpoint, hard: midpoint }
+    // Midpoints derived from research ranges in the optimal task time dataset
+    const SUBFIELD_TIMES = {
+      // Programming & Software Dev
+      "Frontend Development":       {easy:20, medium:35, hard:70},
+      "Backend / API":               {easy:25, medium:45, hard:75},
+      "Debugging":                   {easy:15, medium:35, hard:63},
+      "Code Review":                 {easy:15, medium:33, hard:58},
+      "DevOps / Infrastructure":     {easy:20, medium:40, hard:75},
+      "Database & SQL":              {easy:15, medium:33, hard:65},
+      "Cybersecurity":               {easy:25, medium:45, hard:75},
+      // AI / ML
+      "Data Cleaning & EDA":         {easy:20, medium:40, hard:65},
+      "Feature Engineering":         {easy:25, medium:45, hard:68},
+      "Model Training & Tuning":     {easy:28, medium:48, hard:75},
+      "Research Paper Reading":      {easy:28, medium:45, hard:65},
+      "Statistical Analysis":        {easy:20, medium:40, hard:65},
+      // Design
+      "UI/UX Research":              {easy:25, medium:45, hard:75},
+      "Wireframing & Prototyping":   {easy:20, medium:40, hard:73},
+      "Graphic / Visual Design":     {easy:25, medium:45, hard:75},
+      "Motion / Video Editing":      {easy:28, medium:48, hard:75},
+      "3D Modeling":                 {easy:28, medium:53, hard:78},
+      "Photography & Post":          {easy:20, medium:35, hard:60},
+      // Writing & Media
+      "Copywriting (Short-form)":    {easy:20, medium:35, hard:58},
+      "Long-form Articles":          {easy:33, medium:55, hard:78},
+      "Editing & Proofreading":      {easy:20, medium:40, hard:65},
+      "Scriptwriting":               {easy:25, medium:45, hard:70},
+      "Academic / Technical Writing":{easy:33, medium:55, hard:78},
+      // Business & Management
+      "Email & Admin":               {easy:20, medium:33, hard:53},
+      "Project Planning":            {easy:18, medium:40, hard:65},
+      "Marketing Strategy":          {easy:25, medium:45, hard:70},
+      "Sales & CRM":                 {easy:20, medium:35, hard:58},
+      "Financial Analysis":          {easy:25, medium:45, hard:68},
+      "HR & Recruitment":            {easy:20, medium:33, hard:53},
+      // Medicine (Work)
+      "Patient Consultation":        {easy:20, medium:33, hard:50},
+      "Clinical Documentation":      {easy:18, medium:33, hard:58},
+      "Diagnostic Reasoning":        {easy:25, medium:40, hard:58},
+      "Medication Review":           {easy:15, medium:33, hard:53},
+      "Procedural / Surgical":       {easy:28, medium:48, hard:75},
+      // Law
+      "Legal Research":              {easy:25, medium:45, hard:73},
+      "Contract Review":             {easy:25, medium:45, hard:73},
+      "Document Drafting":           {easy:25, medium:45, hard:75},
+      "Case Analysis":               {easy:30, medium:50, hard:75},
+      // Engineering (Work)
+      "Civil & Structural":          {easy:33, medium:53, hard:78},
+      "Electrical & Circuit Design": {easy:28, medium:48, hard:75},
+      "Mechanical & CAD":            {easy:33, medium:53, hard:75},
+      "Chemical & Process":          {easy:33, medium:53, hard:78},
+      "Architecture & Drafting":     {easy:28, medium:48, hard:75},
+      // Languages (Work)
+      "Translation (General)":       {easy:25, medium:45, hard:68},
+      "Localization":                {easy:20, medium:40, hard:63},
+      "Language Teaching":           {easy:25, medium:45, hard:68},
+      // Mathematics (Study)
+      "Algebra & Pre-Calculus":      {easy:25, medium:38, hard:53},
+      "Calculus":                    {easy:25, medium:40, hard:58},
+      "Discrete Mathematics":        {easy:25, medium:40, hard:58},
+      "Linear Algebra":              {easy:25, medium:40, hard:58},
+      "Statistics & Probability":    {easy:25, medium:38, hard:53},
+      // Physics
+      "Classical Mechanics":         {easy:25, medium:38, hard:55},
+      "Electromagnetism":            {easy:25, medium:40, hard:58},
+      "Thermodynamics (Physics)":    {easy:25, medium:40, hard:58},
+      "Quantum Mechanics":           {easy:30, medium:45, hard:63},
+      "Optics & Waves":              {easy:25, medium:38, hard:55},
+      // Chemistry
+      "General Chemistry":           {easy:25, medium:38, hard:55},
+      "Organic Chemistry":           {easy:25, medium:40, hard:60},
+      "Physical Chemistry":          {easy:30, medium:45, hard:63},
+      "Analytical Chemistry":        {easy:25, medium:40, hard:60},
+      "Biochemistry":                {easy:25, medium:40, hard:60},
+      // Biology
+      "Cell Biology":                {easy:25, medium:38, hard:55},
+      "Molecular Biology & Genetics":{easy:25, medium:40, hard:58},
+      "Microbiology":                {easy:25, medium:38, hard:55},
+      "Ecology & Environmental Bio": {easy:25, medium:38, hard:53},
+      "Human Physiology":            {easy:25, medium:40, hard:58},
+      // Medicine (Study)
+      "Anatomy":                     {easy:25, medium:38, hard:55},
+      "Physiology":                  {easy:25, medium:40, hard:58},
+      "Pharmacology":                {easy:25, medium:40, hard:58},
+      "Pathology":                   {easy:25, medium:40, hard:58},
+      "Microbiology & Immunology":   {easy:20, medium:35, hard:55},
+      "Clinical Reasoning":          {easy:25, medium:45, hard:63},
+      // Engineering (Study)
+      "Statics & Dynamics":          {easy:30, medium:45, hard:68},
+      "Thermodynamics (Eng)":        {easy:30, medium:45, hard:68},
+      "Circuit Theory":              {easy:25, medium:40, hard:63},
+      "Fluid Mechanics":             {easy:30, medium:45, hard:68},
+      "Materials Science":           {easy:25, medium:40, hard:63},
+      // Languages (Study)
+      "Vocabulary":                  {easy:15, medium:25, hard:38},
+      "Grammar & Syntax":            {easy:20, medium:33, hard:48},
+      "Reading Comprehension":       {easy:20, medium:33, hard:48},
+      "Writing & Composition":       {easy:25, medium:40, hard:58},
+      "Listening & Speaking":        {easy:20, medium:33, hard:48},
+      // Social Sciences
+      "Psychology":                  {easy:25, medium:38, hard:55},
+      "Sociology":                   {easy:25, medium:38, hard:55},
+      "Political Science":           {easy:25, medium:38, hard:55},
+      "Philosophy":                  {easy:28, medium:45, hard:60},
+      "Economics":                   {easy:25, medium:40, hard:58},
+      "History":                     {easy:25, medium:38, hard:55},
+      // High School — Science
+      "Pure Mathematics":            {easy:25, medium:35, hard:50},
+      "Physics":                     {easy:23, medium:33, hard:50},
+      "Chemistry":                   {easy:20, medium:33, hard:48},
+      "Biology":                     {easy:25, medium:33, hard:48},
+      "Arabic Language":             {easy:20, medium:30, hard:45},
+      "English Language":            {easy:20, medium:30, hard:45},
+      // High School — Arts
+      "Geography":                   {easy:20, medium:30, hard:43},
+      "Philosophy & Logic":          {easy:25, medium:35, hard:48},
+      // Middle School
+      "Mathematics":                 {easy:18, medium:25, hard:33},
+      "Science":                     {easy:18, medium:25, hard:33},
+      "History & Geography":         {easy:18, medium:25, hard:30},
+      "Religious Studies":           {easy:13, medium:20, hard:28},
+      // Primary School
+      "Science & Nature":            {easy:10, medium:13, hard:16},
+      "Social Studies":              {easy:9,  medium:13, hard:15},
+    };
+
+    /* Parse time range string like "25–45" → midpoint integer */
+    const midpoint = str => {
+      const parts = str.replace("–","-").split("-").map(Number);
+      return Math.round((parts[0]+parts[1])/2);
+    };
+
+    /* ── subfield-aware duration helper ── */
+    const durForSub = (sub, d) => {
+      const entry = SUBFIELD_TIMES[sub];
+      if (!entry) return null;
+      return entry[d] || null;
+    };
+
+    /* ── focus system duration helper (now subfield-aware) ── */
+    const getTaskDur = (fs, f, d, sub) => {
+      if(fs){
+        if(fs.id==="eat_frog")      return d==="hard"?60:45;
+        if(fs.id==="time_blocking") return d==="hard"?120:d==="medium"?90:60;
+        if(fs.id!=="kanban" && fs.workDur) return fs.workDur;
+      }
+      // Use subfield-specific time if available
+      const sfTime = sub ? durForSub(sub, d) : null;
+      if(sfTime) return sfTime;
+      return dur(f, d);
     };
 
     /* ── focus systems catalogue ── */
@@ -248,7 +394,7 @@
       if(!focusSys) return buildPlan(tasks);
       const ord={hard:0,medium:1,easy:2};
       const sorted=[...tasks].sort((a,b)=>ord[a.diff]-ord[b.diff]);
-      const updated=sorted.map(t=>({...t,dur:getTaskDur(focusSys,null,t.diff)}));
+      const updated=sorted.map(t=>({...t,dur:getTaskDur(focusSys,null,t.diff,t.sub)}));
       const blocks=[]; let c=0; let wc=0;
       updated.forEach((t,i)=>{
         blocks.push({type:"work",task:t,dur:t.dur,start:c}); c+=t.dur; wc++;
@@ -611,7 +757,7 @@
 
       function addTask(){
         if(!name.trim())return;
-        setTasks(p=>[...p,{id:Date.now()+Math.random(),name:name.trim(),diff,dur:getTaskDur(focusSys,field,diff),done:false}]);
+        setTasks(p=>[...p,{id:Date.now()+Math.random(),name:name.trim(),diff,sub,dur:getTaskDur(focusSys,field,diff,sub),done:false}]);
         setName("");
       }
 
@@ -741,7 +887,22 @@
 
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"linear-gradient(135deg,rgba(237,232,255,0.7),rgba(220,253,244,0.5))",borderRadius:12,padding:"11px 15px",marginBottom:16,border:"1px solid rgba(111,66,255,0.1)"}}>
                   <span style={{fontSize:13,color:"var(--color-text-secondary)",fontWeight:500}}>Estimated time</span>
-                  <span style={{fontSize:15,fontWeight:800,color:P,fontFamily:"var(--font-display)"}}>{getTaskDur(focusSys,field,diff)} min</span>
+                  <div style={{textAlign:"right"}}>
+                    <span style={{fontSize:15,fontWeight:800,color:P,fontFamily:"var(--font-display)"}}>{getTaskDur(focusSys,field,diff,sub)} min</span>
+                    {SUBFIELD_TIMES[sub] && (
+                      <div style={{fontSize:10,color:"var(--color-text-tertiary)",fontWeight:500,marginTop:1}}>
+                        {["easy","medium","hard"].map(d=>(
+                          <span key={d} style={{
+                            display:"inline-block",marginLeft:6,
+                            color:d===diff?P:"var(--color-text-tertiary)",
+                            fontWeight:d===diff?700:500
+                          }}>
+                            {d.charAt(0).toUpperCase()+d.slice(1)}: {SUBFIELD_TIMES[sub][d]}m
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <button onClick={addTask} disabled={!name.trim()} style={{...BTNP,opacity:!name.trim()?0.5:1}}>
                   <i className="ti ti-plus" style={{verticalAlign:"-2px",marginRight:5}} aria-hidden="true"/>Add {lbl}
